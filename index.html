@@ -243,6 +243,7 @@ body::before{background:var(--bg-top)}
 .xbtn{width:44px;height:44px;border-radius:50%;border:none;background:var(--brand-soft);color:var(--ink);font-size:18px;font-weight:800;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center;font-family:inherit}
 .xbtn:focus-visible{outline:3px solid var(--link);outline-offset:2px}
 .panel{overscroll-behavior:contain}
+.stile.wide{flex-direction:row;align-items:center;gap:14px;width:100%;min-height:84px;margin-top:12px}
 </style>
 </head>
 <body>
@@ -266,7 +267,7 @@ var KINDS={
   forcella:{label:"Forcella e sospensioni",months:12},
   altro:{label:"Altro",months:12}
 };
-var LOGKINDS=Object.assign({},KINDS,{riparazione:{label:"Riparazione o spesa extra",months:0}});
+var LOGKINDS=Object.assign({},KINDS,{riparazione:{label:"Riparazione o spesa extra",months:0},acquisto:{label:"Acquisto e rata",months:0}});
 var TYPES={auto:"Auto",moto:"Moto",scooter:"Scooter",bici:"Bicicletta"};
 var FUELS={benzina:"Benzina",diesel:"Diesel",gpl:"Benzina e GPL",metano:"Benzina e metano",ibrida:"Ibrida",elettrica:"Elettrica"};
 var BRANDS={
@@ -301,7 +302,7 @@ function addMonths(s,n){
 }
 var fmtDate=function(s){var d=parse(s);return d?d.toLocaleDateString("it-IT",{day:"numeric",month:"long",year:"numeric"}):"";};
 var fmtShort=function(s){var d=parse(s);return d?d.toLocaleDateString("it-IT",{day:"numeric",month:"short",year:"numeric"}):"";};
-var eur=function(n){return new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(n||0);};
+var eur=function(n){return new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR",useGrouping:"always"}).format(n||0);};
 var cap=function(s){return s.charAt(0).toUpperCase()+s.slice(1);};
 var val=function(id){var e=document.getElementById(id);return e?e.value:"";};
 
@@ -332,6 +333,7 @@ var P={
   image:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/>',
   brake:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3"/>',
   fork:'<path d="M8 3v7a4 4 0 0 0 8 0V3M12 14v7"/>',
+  tag:'<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.6"/>',
   home:'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>',
   chart:"<path d=\"M4 19V9M10 19V5M16 19v-7M22 19H2\"/>",
   plus:"<path d=\"M12 5v14M5 12h14\"/>",
@@ -347,7 +349,7 @@ var P={
 };
 function ic(name,size){size=size||20;return "<svg width=\""+size+"\" height=\""+size+"\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.1\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">"+P[name]+"</svg>";}
 function typeIcon(t){return t==="bici"?"bici":(t==="moto"||t==="scooter")?"moto":"car";}
-function kindIcon(k){return {revisione:"doc",assicurazione:"shield",bollo:"doc",tagliando:"wrench",cambio:"gear",gomme:"tyre",catena:"gear",freni:"brake",forcella:"fork",riparazione:"wrench",altro:"doc"}[k]||"doc";}
+function kindIcon(k){return {revisione:"doc",assicurazione:"shield",bollo:"doc",tagliando:"wrench",cambio:"gear",gomme:"tyre",catena:"gear",freni:"brake",forcella:"fork",riparazione:"wrench",acquisto:"tag",altro:"doc"}[k]||"doc";}
 
 function vOf(id){return S.vehicles.find(function(x){return x.id===id;});}
 function vName(id){var v=vOf(id);return v?v.name:"Veicolo";}
@@ -451,10 +453,11 @@ var SEC={
   catena:{title:'Catena e trasmissione',kinds:['catena'],icon:'gear',bg:'#D6E3F1',addLbl:'Aggiungi un intervento già fatto',nextLbl:'Prossima manutenzione',emptyH:'Nessun intervento registrato. Quando tocchi “Fatto” su una scadenza, finisce qui da solo.',sum:'Speso in catena e trasmissione',km:true},
   freni:{title:'Freni',kinds:['freni'],icon:'brake',bg:'#F4D9D3',addLbl:'Aggiungi un intervento già fatto',nextLbl:'Prossimo controllo',emptyH:'Nessun intervento registrato. Quando tocchi “Fatto” su una scadenza, finisce qui da solo.',sum:'Speso in freni',km:true},
   forcella:{title:'Forcella e sospensioni',kinds:['forcella'],icon:'fork',bg:'#DCE7D5',addLbl:'Aggiungi un service già fatto',nextLbl:'Prossimo service',emptyH:'Nessun service registrato. Quando tocchi “Fatto” su una scadenza, finisce qui da solo.',sum:'Speso in forcella e sospensioni',km:false},
+  acquisto:{title:'Acquisto e rata',kinds:['acquisto'],icon:'tag',bg:'#EFD6D3',addLbl:'',nextLbl:'',emptyH:'',sum:'',km:false},
   altro:{title:'Altre spese',kinds:['riparazione','altro'],icon:'wrench',bg:'#EADFD0',addLbl:'Aggiungi una spesa extra',nextLbl:'Altre scadenze',emptyH:'Nessuna spesa registrata. Qui metti riparazioni, accessori e tutto il resto.',sum:'Speso in altre cose',km:true,dlKind:'altro'}
 };
 function secCfg(v,k){var c=SEC[k];if(v&&v.type==='bici'&&k==='tagliandi')return Object.assign({},c,{title:'Tagliando generale',kinds:['tagliando']});return c;}
-function secOfKind(k){return {catena:'catena',freni:'freni',forcella:'forcella',tagliando:'tagliandi',cambio:'tagliandi',bollo:'bolli',assicurazione:'assicurazione',revisione:'revisioni',gomme:'gomme',riparazione:'altro',altro:'altro'}[k]||'altro';}
+function secOfKind(k){return {acquisto:'acquisto',catena:'catena',freni:'freni',forcella:'forcella',tagliando:'tagliandi',cambio:'tagliandi',bollo:'bolli',assicurazione:'assicurazione',revisione:'revisioni',gomme:'gomme',riparazione:'altro',altro:'altro'}[k]||'altro';}
 var CARCOL=[['Rosso','#E4605A'],['Arancio','#EDA06A'],['Giallo','#F0CF70'],['Verde','#8DB88A'],['Azzurro','#8DBBE0'],['Blu','#5E82BA'],['Rosa','#EAA9B8'],['Bianco','#F8F5EF'],['Grigio','#B8BCC6'],['Nero','#4B4B55'],['Marrone','#A98262']];
 function colorBlock(sel){
   return '<label>Colore del disegno</label><div class="swrow" id="v-colors">'+CARCOL.map(function(c){return '<button type="button" class="sw'+(sel===c[1]?' on':'')+'" data-act="pick-color" data-color="'+c[1]+'" style="background:'+c[1]+'" aria-label="'+c[0]+'" aria-pressed="'+(sel===c[1])+'"></button>';}).join('')+'</div><input type="hidden" id="v-color" value="'+(sel||'')+'">';
@@ -556,6 +559,90 @@ function viewGarage(){
   h+='<div class="vgrid">'+VL.map(vehTile).join('')+'<button class="vtile add" data-act="add-vehicle"><span style="color:var(--link)">'+ic('plus',34)+'</span><span class="vt-name" style="color:var(--link)">'+c.addOther+'</span></button></div>';
   return h;
 }
+/* ---- acquisto e rata: dato fisso, senza scadenze né avvisi ---- */
+function buyEntries(v){
+  var b=v&&v.buy;if(!b||!parse(b.date))return [];
+  var out=[],t0=iso(today()),id=v.id;
+  if(b.mode==='rate'){
+    if(b.down>0&&b.date<=t0)out.push({id:'a-'+id+'-d',vehicleId:id,date:b.date,kind:'acquisto',title:'Anticipo',amount:b.down,km:0,note:'',auto:true});
+    var n=b.n||0,r=b.rata||0,first=(b.first&&parse(b.first))?b.first:addMonths(b.date,1);
+    for(var i=0;i<n;i++){var d=addMonths(first,i);if(d>t0)break;out.push({id:'a-'+id+'-r'+i,vehicleId:id,date:d,kind:'acquisto',title:'Rata '+(i+1)+(n?' di '+n:''),amount:r,km:0,note:'',auto:true});}
+    if(b.balloon>0&&n){var dl=addMonths(first,n);if(dl<=t0)out.push({id:'a-'+id+'-b',vehicleId:id,date:dl,kind:'acquisto',title:'Maxirata finale',amount:b.balloon,km:0,note:'',auto:true});}
+  }else if(b.price>0&&b.date<=t0){
+    out.push({id:'a-'+id+'-p',vehicleId:id,date:b.date,kind:'acquisto',title:'Acquisto',amount:b.price,km:0,note:'',auto:true});
+  }
+  return out;
+}
+function allLog(){var a=S.log.slice();S.vehicles.forEach(function(v){a=a.concat(buyEntries(v));});return a;}
+function buyTile(v){
+  var b=v.buy,sub;
+  if(!b)sub='Quando l’hai comprata e come la paghi';
+  else if(b.mode==='rate'){var k=buyEntries(v).filter(function(x){return x.title.indexOf('Rata')===0;}).length;sub='Rata '+eur(b.rata)+' al mese · '+k+' di '+b.n+' pagate';}
+  else sub='Acquistata il '+fmtShort(b.date)+(b.price?' · '+eur(b.price):'');
+  return '<button class="stile wide" data-act="open-sec" data-id="'+v.id+'" data-sec="acquisto"><span class="st-ico" style="background:#EFD6D3">'+ic('tag',26)+'</span><span style="flex:1;text-align:left"><span class="st-t" style="display:block">Acquisto e rata</span><span class="st-s">'+esc(sub)+'</span></span></button>';
+}
+function viewAcquisto(v){
+  var b=v.buy;
+  var h='<button class="btn small" data-act="open-veh" data-id="'+v.id+'">← '+esc(v.name)+'</button><h1>Acquisto e rata</h1><p class="sub">'+esc(v.name)+'</p>';
+  if(!b){
+    return h+'<div class="card empty" style="margin-top:12px"><p>Scrivi quando l’hai comprata e come l’hai pagata. Se è a rate, le rate si sommano da sole alle tue spese, senza scadenze e senza avvisi da ricordare.</p><button class="btn primary block big" data-act="edit-buy" data-id="'+v.id+'">'+ic('plus')+'Aggiungi l’acquisto</button></div>';
+  }
+  var ents=buyEntries(v),paid=ents.reduce(function(a,e){return a+(e.amount||0);},0);
+  var rows=[['Acquistata il',fmtDate(b.date)]];
+  if(b.price)rows.push(['Prezzo',eur(b.price)]);
+  var plan=0;
+  if(b.mode==='rate'){
+    var first=(b.first&&parse(b.first))?b.first:addMonths(b.date,1),k=ents.filter(function(x){return x.title.indexOf('Rata')===0;}).length;
+    plan=(b.down||0)+(b.rata||0)*(b.n||0)+(b.balloon||0);
+    rows.push(['Pagamento','A rate']);
+    if(b.down)rows.push(['Anticipo',eur(b.down)]);
+    rows.push(['Rata',eur(b.rata)+' al mese']);
+    rows.push(['Rate pagate',k+' di '+b.n]);
+    rows.push(['Prima rata',fmtDate(first)]);
+    rows.push(['Ultima rata',fmtDate(addMonths(first,Math.max(0,b.n-1)))]);
+    if(b.balloon)rows.push(['Maxirata finale',eur(b.balloon)]);
+  }else rows.push(['Pagamento','Tutto subito']);
+  rows.push(['Pagato finora',eur(paid)]);
+  if(b.mode==='rate'&&plan>paid)rows.push(['Ancora da pagare',eur(plan-paid)]);
+  h+='<div class="card" style="margin-top:12px">'+rows.map(function(r,i){return '<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;'+(i?'border-top:1px solid var(--line)':'')+'"><span style="color:var(--muted)">'+esc(r[0])+'</span><b style="text-align:right">'+esc(r[1])+'</b></div>';}).join('');
+  if(b.mode==='rate'&&plan>0)h+='<div style="margin-top:12px;height:12px;border-radius:8px;background:var(--brand-soft);overflow:hidden"><div style="height:100%;width:'+Math.min(100,Math.round(paid/plan*100))+'%;background:var(--ok-btn);border-radius:8px"></div></div><div style="font-size:13px;color:var(--muted);margin-top:6px">'+Math.min(100,Math.round(paid/plan*100))+'% pagato</div>';
+  h+='</div>';
+  h+='<p class="note">Le rate si sommano da sole alla scheda Spese, mese per mese. Nessun avviso e nessuna scadenza.</p>';
+  h+='<button class="btn block big" style="margin-top:14px" data-act="edit-buy" data-id="'+v.id+'">'+ic('edit')+'Modifica</button><button class="linkbtn" style="color:var(--danger);margin-top:6px" data-act="del-buy" data-id="'+v.id+'">Elimina i dati dell’acquisto</button>';
+  return h;
+}
+function sheetBuy(vid){
+  var v=vOf(vid);if(!v)return;var b=v.buy||{mode:'cash'};
+  var rate=b.mode==='rate';
+  openSheet('Acquisto e rata',
+    '<p style="margin:8px 0 0;font-weight:700">'+esc(v.name)+'</p>'+
+    '<label for="b-date">Quando l’hai comprata?</label><input type="date" id="b-date" value="'+esc(b.date||'')+'">'+
+    '<label for="b-price">Quanto è costata? (€, facoltativo)</label><input type="text" inputmode="decimal" id="b-price" value="'+(b.price||'')+'" autocomplete="off" placeholder="€">'+
+    '<label>Come l’hai pagata?</label>'+
+    '<label class="opt"><input type="radio" name="bm" value="cash"'+(rate?'':' checked')+'> Tutta subito</label>'+
+    '<label class="opt"><input type="radio" name="bm" value="rate"'+(rate?' checked':'')+'> A rate</label>'+
+    '<div id="b-ratebox"'+(rate?'':' hidden')+'>'+
+    '<label for="b-down">Anticipo (€, facoltativo)</label><input type="text" inputmode="decimal" id="b-down" value="'+(b.down||'')+'" autocomplete="off" placeholder="€">'+
+    '<label for="b-rata">Quanto paghi ogni mese? (€)</label><input type="text" inputmode="decimal" id="b-rata" value="'+(b.rata||'')+'" autocomplete="off" placeholder="€">'+
+    '<label for="b-n">Quante rate in tutto?</label><input type="text" inputmode="numeric" id="b-n" value="'+(b.n||'')+'" autocomplete="off" placeholder="Per esempio: 48">'+
+    '<label for="b-first">Quando hai pagato (o pagherai) la prima rata?</label><input type="date" id="b-first" value="'+esc(b.first||'')+'"><div class="hint">Se lasci vuoto, conto un mese dopo l’acquisto.</div>'+
+    '<label for="b-balloon">Maxirata finale o riscatto (€, facoltativo)</label><input type="text" inputmode="decimal" id="b-balloon" value="'+(b.balloon||'')+'" autocomplete="off" placeholder="€">'+
+    '</div>',
+    CANCEL+'<button class="btn primary" data-act="save-buy" data-id="'+vid+'">Salva</button>');
+}
+function saveBuy(vid){
+  var v=vOf(vid);if(!v)return;
+  var date=val('b-date');if(!parse(date)){err('Scegli la data di acquisto.');return;}
+  var mode=(document.querySelector('input[name=bm]:checked')||{}).value||'cash';
+  var b={date:date,price:num(val('b-price')),mode:mode};
+  if(mode==='rate'){
+    b.down=num(val('b-down'));b.rata=num(val('b-rata'));b.n=Math.round(num(val('b-n')))||0;b.balloon=num(val('b-balloon'));
+    var f=val('b-first');if(parse(f))b.first=f;
+    if(!(b.rata>0)){err('Scrivi quanto paghi ogni mese.');return;}
+    if(!(b.n>0)){err('Scrivi quante rate sono in tutto.');return;}
+  }
+  v.buy=b;save();closeSheet();render();
+}
 function secTile(v,k){
   var c=secCfg(v,k);
   var ds=S.deadlines.filter(function(d){return d.vehicleId===v.id&&c.kinds.indexOf(d.kind)>=0&&parse(d.date);}).sort(byDate);
@@ -578,7 +665,7 @@ function viewVeicolo(){
   var vfk=vfOf(v.type);var h='<button class="btn small" data-act="tab" data-tab="garage" data-vf="'+vfk+'">← '+VF[vfk].title+'</button>';
   h+='<div class="gh" style="margin-top:12px">'+'<span style="position:relative;display:block;flex:none">'+vehArt(v)+'<button class="penbtn" data-act="veh-photo" data-id="'+v.id+'" aria-label="Cambia la foto di '+esc(v.name)+'">'+ic('edit',18)+'</button></span><div style="flex:1;min-width:0"><div class="vname" style="font-size:22px">'+esc(v.name)+'</div>'+(parts.length?'<div style="font-size:13px;color:var(--muted);margin-top:2px">'+esc(parts.join(' · '))+'</div>':'')+'</div></div>';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px">'+(true?'<button class="linkbtn" data-act="edit-km" data-id="'+v.id+'">'+kmLabel(v)+'</button>':'<span></span>')+'<button class="btn small" data-act="edit-vehicle" data-id="'+v.id+'">'+ic('edit',18)+'Modifica</button></div>';
-  h+='<div class="sgrid">'+secs.map(function(k){return secTile(v,k);}).join('')+'</div>';
+  h+='<div class="sgrid">'+secs.map(function(k){return secTile(v,k);}).join('')+'</div>'+buyTile(v);
   h+='<div class="section-head"><h2>Scadenze</h2></div><div class="vcard" style="margin-top:10px">';
   h+=ds.length?ds.map(dlRow).join(''):'<p style="margin:0 0 12px;color:var(--muted)">Nessuna scadenza. Aggiungi la prima qui sotto: ti avviso io quando si avvicina.</p>';
   if(ds.length&&!shop&&ds.some(function(d){return WSKINDS.indexOf(d.kind)>=0;}))h+='<button class="linkbtn" data-act="tab" data-tab="profilo">Aggiungi la tua officina per prenotare con un tocco</button>';
@@ -588,6 +675,7 @@ function viewVeicolo(){
 }
 function viewSezione(){
   var v=vOf(ui.vid),c=secCfg(v,ui.sec);if(!v||!c){ui.tab='home';return viewHome();}
+  if(ui.sec==='acquisto')return viewAcquisto(v);
   var ds=S.deadlines.filter(function(d){return d.vehicleId===v.id&&c.kinds.indexOf(d.kind)>=0&&parse(d.date);}).sort(byDate);
   var lg=S.log.filter(function(l){return l.vehicleId===v.id&&c.kinds.indexOf(l.kind)>=0;}).sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:0;});
   var tot=lg.reduce(function(a,l){return a+(l.amount||0);},0);
@@ -603,9 +691,15 @@ function viewSezione(){
     }
     h+='</div>';
   }
+  if(ui.sec==='altro'){
+    h+='<button class="btn primary block big" style="margin-top:14px" data-act="past" data-id="'+v.id+'">'+ic('plus')+'Aggiungi una spesa extra</button>';
+    h+='<button class="btn block big" style="margin-top:10px" data-act="new-dl" data-id="'+v.id+'" data-kind="'+(c.dlKind||c.kinds[0])+'">'+ic('plus')+'Imposta una scadenza</button>';
+    if(ds.length)h+='<div class="section-head"><h2>Scadenze</h2></div><div class="vcard" style="margin-top:10px">'+ds.map(dlRow).join('')+'</div>';
+  }else{
   h+='<div class="vcard" style="margin-top:12px"><h2 style="font-size:17px">'+esc(c.nextLbl)+'</h2>';
   h+=ds.length?ds.map(dlRow).join(''):'<p style="margin:8px 0 12px;color:var(--muted)">Non hai ancora impostato la scadenza.</p><button class="btn primary block big" data-act="new-dl" data-id="'+v.id+'" data-kind="'+(c.dlKind||c.kinds[0])+'">'+ic('plus')+'Imposta la scadenza</button>';
   h+='</div>';
+  }
   h+='<div class="section-head"><h2>Storico</h2></div>';
   if(!lg.length)h+='<div class="card empty" style="margin-top:10px"><p style="margin:0">'+esc(c.emptyH)+'</p></div>';
   else{
@@ -615,7 +709,7 @@ function viewSezione(){
     }).join('')+'</div>';
     if(tot)h+='<p style="margin:10px 4px 0;color:var(--muted)">'+esc(c.sum)+': <b style="color:var(--ink)">'+esc(eur(tot))+'</b></p>';
   }
-  h+='<button class="btn block big" style="margin-top:16px" data-act="past" data-id="'+v.id+'">'+ic('plus')+esc(c.addLbl)+'</button>';
+  if(ui.sec!=='altro')h+='<button class="btn block big" style="margin-top:16px" data-act="past" data-id="'+v.id+'">'+ic('plus')+esc(c.addLbl)+'</button>';
   return h;
 }
 function sheetPast(vid){
@@ -818,6 +912,7 @@ function viewStorico(){
   if(v.immat)rows.push(['Immatricolazione',fmtDate(v.immat)]);
   if(v.fuel&&FUELS[v.fuel])rows.push(['Alimentazione',FUELS[v.fuel]]);
   if(v.km)rows.push(['Chilometri',fmtKm(v.km)+' km']);
+  if(v.buy&&parse(v.buy.date))rows.push(['Acquistata il',fmtDate(v.buy.date)]);
   rows.push(['Interventi registrati',String(log.length)]);
   rows.push(['Spesa totale',eur(tot)]);
   var h='<div class="noprint"><button class="btn small" data-act="open-veh" data-id="'+v.id+'">← '+esc(v.name)+'</button></div>';
@@ -1063,17 +1158,16 @@ function render(){
     (ui.storageOk?'':'<div class="banner" role="alert">Il salvataggio automatico non è disponibile in questo browser: i dati si perdono alla chiusura. Usa la copia di sicurezza (scheda Profilo).</div>')+v;
 }
 function viewSpese(){
-  var years=[];S.log.forEach(function(l){var y=l.date.slice(0,4);if(years.indexOf(y)<0)years.push(y);});
+  var years=[];allLog().forEach(function(l){var y=l.date.slice(0,4);if(years.indexOf(y)<0)years.push(y);});
   years.sort().reverse();
   if(ui.period!=='12m'&&years.indexOf(ui.period)<0)ui.period='12m';
   var start=addMonths(iso(today()),-12);
-  var items=S.log.filter(function(l){return ui.period==='12m'?l.date>=start:l.date.slice(0,4)===ui.period;});
+  var items=allLog().filter(function(l){return ui.period==='12m'?l.date>=start:l.date.slice(0,4)===ui.period;});
   var total=items.reduce(function(a,l){return a+(l.amount||0);},0);
   var h='<h1>Spese</h1>';
   if(!S.vehicles.length)return h+'<div class="card empty"><p>Quando aggiungi un veicolo e registri tagliandi, bolli, assicurazione e gomme, le spese compaiono qui da sole.</p></div>';
   h+='<label for="period" style="margin-top:8px">Periodo</label><select id="period"><option value="12m"'+(ui.period==='12m'?' selected':'')+'>Ultimi 12 mesi</option>'+years.map(function(y){return '<option value="'+y+'"'+(ui.period===y?' selected':'')+'>Anno '+y+'</option>';}).join('')+'</select>';
   h+='<div class="hero"><span class="meta">Totale</span><div class="big">'+esc(eur(total))+'</div>'+(ui.period==='12m'?'<div class="meta">circa '+esc(eur(total/12))+' al mese</div>':'')+'</div>';
-  h+='<button class="btn primary block big" style="margin-top:14px" data-act="extra-start">'+ic('plus')+'Aggiungi una spesa extra</button>';
   if(!items.length){
     h+='<div class="card empty"><p>Nessuna spesa in questo periodo. Le spese arrivano da sole dalle schede dei tuoi veicoli: tagliandi, bolli, assicurazione, revisioni, gomme e altre spese.</p></div>';
     return h;
@@ -1092,7 +1186,7 @@ function viewSpese(){
     var sub=[vName(l.vehicleId),fmtShort(l.date)];if(l.km)sub.push(fmtKm(l.km)+' km');
     return '<button class="item rowbtn" data-act="open-sec" data-id="'+l.vehicleId+'" data-sec="'+secOfKind(l.kind)+'"><div class="ico">'+ic(kindIcon(l.kind))+'</div><div class="grow"><div class="t">'+esc(l.title||(LOGKINDS[l.kind]||{label:l.kind}).label)+'</div><div class="s">'+esc(sub.join(' · '))+'</div></div><div style="font-weight:800">'+esc(eur(l.amount))+'</div></button>';
   }).join('')+'</div>';
-  h+='<p class="note">Le spese arrivano da sole dalle schede dei veicoli, oppure le aggiungi da qui con “Aggiungi una spesa extra”. Tocca una voce per aprirla.</p>';
+  h+='<p class="note">Le spese arrivano da sole dalle schede dei veicoli (tagliandi, bolli, assicurazione, revisioni, gomme e altre spese). Tocca una voce per aprirla.</p>';
   return h;
 }
 
@@ -1337,6 +1431,9 @@ document.addEventListener('click',function(e){
     case 'wiz-resume':wizKm(id);break;
     case 'wiz-next':wizNext(id,+el.getAttribute('data-step'),el.getAttribute('data-skip')==='1');break;
     case 'pick-every':var pv=el.getAttribute('data-val'),pt=el.getAttribute('data-target');var hi=document.getElementById(pt);if(hi)hi.value=pv;document.querySelectorAll('.kmchip[data-target="'+pt+'"]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-val')===pv);});if(pt==='x-every')recalcNext();break;
+    case 'edit-buy':sheetBuy(id);break;
+    case 'save-buy':saveBuy(id);break;
+    case 'del-buy':withUndo('Dati dell’acquisto eliminati',function(){var vb=vOf(id);if(vb){delete vb.buy;save();render();}});break;
     case 'edit-name':ui.editName=true;render();break;
     case 'save-name':S.profile=S.profile||{name:'',photo:''};S.profile.name=val('pf-name').trim();ui.editName=false;save();render();showToast('Nome salvato');break;
     case 'edit-shop':ui.editShop=true;render();break;
@@ -1397,6 +1494,7 @@ document.addEventListener('click',function(e){
 document.addEventListener('change',function(e){
   var id=e.target.id;
   if(id==='photo-in'){handlePhoto(e.target.files&&e.target.files[0]);e.target.value='';return;}
+  if(e.target.name==='bm'){var bx=$('#b-ratebox');if(bx)bx.hidden=(e.target.value!=='rate');return;}
   if(e.target.name==='wt'){var pb=$('#w-pastbox');if(pb)pb.hidden=(e.target.value!=='past');return;}
   if(id==='x-km'){recalcNext();return;}
   if(id==='vp-cam'||id==='vp-lib'){handleVehPhoto(e.target.files&&e.target.files[0],ui.vid);e.target.value='';return;}
