@@ -1,0 +1,30 @@
+MONITOR – pacchetto per metterla online come app installabile (PWA)
+
+COSA C'È DENTRO
+  index.html            l'app
+  manifest.webmanifest  nome, colori e icone (dice al telefono "puoi installarmi")
+  sw.js                 la parte che la fa funzionare anche senza rete
+  icon-192.png, icon-512.png, icon-maskable-512.png, apple-touch-icon.png, favicon-32.png   le icone
+
+COME METTERLA ONLINE (serve un indirizzo https, lo danno gratis i servizi di hosting)
+  1. Scegli un servizio (per esempio Netlify, Cloudflare Pages o GitHub Pages) e apri un account.
+  2. Carica TUTTI i file di questa cartella (non lo zip: la cartella con dentro i file).
+     index.html deve stare nella radice, non dentro un'altra sottocartella.
+  3. Il servizio ti dà un indirizzo, tipo  monitor.qualcosa.app
+  4. Apri quell'indirizzo dal telefono:
+       Android (Chrome): nel Profilo compare "Installa l'app" (oppure menu ⋮ > Installa app).
+       iPhone (Safari):  Condividi > "Aggiungi alla schermata Home".
+
+COME CAMBIARE IL NOME
+  Il nome "Monitor" è in tre posti: manifest.webmanifest (name e short_name),
+  index.html (<title> e apple-mobile-web-app-title) e la scritta nell'app.
+
+QUANDO PUBBLICHI UNA NUOVA VERSIONE
+  In sw.js cambia  const CACHE = 'monitor-v1'  in 'monitor-v2' (poi v3, v4...),
+  così i telefoni scaricano la versione nuova.
+
+ATTENZIONE AI DATI
+  I dati salvati nella versione di prova NON passano da soli alla versione installata
+  (è un indirizzo diverso). Usa "Copia di sicurezza" nel Profilo e poi "Ripristina da copia".
+  Le foto non sono incluse nella copia di sicurezza.
+  Su iPhone, l'app installata ha un archivio separato da quello di Safari.
