@@ -1,6 +1,6 @@
 // Monitor – funzionamento anche senza rete.
 // Quando pubblichi una nuova versione dell'app, cambia il numero qui sotto (v1 -> v2).
-const CACHE = 'monitor-v5';
+const CACHE = 'monitor-v7';
 const FONTS = 'monitor-fonts';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png', 'favicon-32.png'];
 

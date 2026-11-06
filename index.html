@@ -13,6 +13,13 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Monitor">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script>
+/* Contatto per il pulsante "Scrivici" nel Profilo. Compila UNO o entrambi i campi, poi salva e ricarica su GitHub.
+   wa  = numero WhatsApp con il prefisso, per esempio "393331234567" (senza + e senza spazi)
+   mail = indirizzo email, per esempio "ciao@esempio.it"
+   Se lasci tutto vuoto, il pulsante non compare. */
+window.MONITOR_SUPPORT={wa:"",mail:""};
+</script>
 <title>Monitor – scadenze e storico del tuo veicolo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -395,6 +402,7 @@ function viewHome(){
   var pr=S.profile||{},nm=(pr.name||'').trim();
   var av='<button class="homeav" data-act="tab" data-tab="profilo" aria-label="Il tuo profilo">'+(pr.photo?'<img src="'+pr.photo+'" alt="">':ic('user',28))+'</button>';
   var h='<div class="homehead">'+av+'<div style="min-width:0"><div style="color:var(--muted);font-weight:700">'+(nm?greet()+',':'Benvenuti in')+'</div><h1 style="margin:0">'+(nm?esc(nm):'Monitor')+'</h1></div></div>';
+  h+=backupCard();
   ['auto','moto','bici'].forEach(function(k){
     var c=VF[k],n=S.vehicles.filter(function(v){return c.types.indexOf(v.type)>=0;}).length;
     h+=bigBtn('garage',k,c.ill,c.title,n?n+' '+(n===1?c.one:c.many):c.homeEmpty);
@@ -440,7 +448,7 @@ function dlRow(d){
     kmLine='<div style="font-size:13px;color:var(--muted)">'+(kn?((kl<=0?'Superati i ':'Oppure a ')+fmtKm(d.kmDue)+' km'+(kl>0?' · mancano '+fmtKm(kl)+' km':'')):('Oppure a '+fmtKm(d.kmDue)+' km · aggiorna i km attuali'))+'</div>';
   }
   var wl=WSKINDS.indexOf(d.kind)>=0?waLink(d):'';
-  return '<div class="dl">'+block+'<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:16px">'+esc(LOGKINDS[d.kind].label)+'</div><div style="font-size:13px;color:var(--muted)">'+(n<0?'Scaduta il ':'Scade il ')+esc(fmtDate(d.date))+'</div>'+kmLine+(d.note?'<div style="font-size:13px;color:var(--muted)">'+esc(d.note)+'</div>':'')+'<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="linkbtn" data-act="edit-deadline" data-id="'+d.id+'">Modifica</button>'+(wl?'<a class="linkbtn" href="'+wl+'" target="_blank" rel="noopener">Prenota in officina</a>':'')+'<a class="linkbtn" href="'+calLink(LOGKINDS[d.kind].label+(v?' · '+v.name:''),d.date,'Promemoria da Monitor'+(d.note?': '+d.note:''))+'" target="_blank" rel="noopener">Aggiungi al calendario</a></div></div><button class="btn primary" data-act="done" data-id="'+d.id+'" style="min-height:52px">'+ic('check')+'Fatto</button></div>';
+  return '<div class="dl">'+block+'<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:16px">'+esc(LOGKINDS[d.kind].label)+'</div><div style="font-size:13px;color:var(--muted)">'+(n<0?'Scaduta il ':'Scade il ')+esc(fmtDate(d.date))+(d.amount?' · circa '+esc(eur(d.amount)):'')+'</div>'+kmLine+(d.note?'<div style="font-size:13px;color:var(--muted)">'+esc(d.note)+'</div>':'')+'<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="linkbtn" data-act="edit-deadline" data-id="'+d.id+'">Modifica</button>'+(wl?'<a class="linkbtn" href="'+wl+'" target="_blank" rel="noopener">Prenota in officina</a>':'')+'<a class="linkbtn" href="'+calLink(LOGKINDS[d.kind].label+(v?' · '+v.name:''),d.date,'Promemoria da Monitor'+(d.note?': '+d.note:''))+'" target="_blank" rel="noopener">Aggiungi al calendario</a></div></div><button class="btn primary" data-act="done" data-id="'+d.id+'" style="min-height:52px">'+ic('check')+'Fatto</button></div>';
 }
 var PAYM={annuale:{label:'Una volta all’anno',n:1},semestrale:{label:'Ogni 6 mesi',n:2},mensile:{label:'Ogni mese',n:12}};
 function insAnnual(v){var i=v&&v.ins;return(i&&i.amount&&PAYM[i.mode])?i.amount*PAYM[i.mode].n:0;}
@@ -857,7 +865,8 @@ function viewProfilo(){
     h+='<div style="display:flex;align-items:center;gap:12px"><div style="flex:1;min-width:0"><div style="font-weight:800;font-size:17px">'+esc(sh.name||'La tua officina')+'</div><div style="color:var(--muted)">WhatsApp: '+esc(sh.phone)+'</div></div><button class="btn small" data-act="edit-shop">'+ic('edit',18)+'Modifica</button></div><div class="hint" style="display:flex;align-items:center;gap:6px;color:var(--ok);font-weight:700">'+ic('check',18)+'Salvata: sulle scadenze compare “Prenota in officina”.</div>';
   }
   h+='</div>';
-  h+='<div class="section-head"><h2>I tuoi dati</h2></div><div class="card" style="margin-top:10px"><p style="margin:0 0 12px;color:var(--muted)">I dati restano su questo dispositivo. Fai ogni tanto una copia di sicurezza.</p><div style="display:flex;flex-direction:column;gap:10px"><button class="btn" data-act="export">Copia di sicurezza</button><button class="btn" data-act="import">Ripristina da copia</button><button class="btn" data-act="onb-replay">Rivedi la guida rapida</button><button class="btn danger" data-act="reset">Cancella tutto</button></div></div>';
+  h+=supportBlock();
+  h+='<div class="section-head"><h2>I tuoi dati</h2></div><div class="card" style="margin-top:10px"><p style="margin:0 0 12px;color:var(--muted)">I dati restano su questo telefono. '+(pr.lastBackup?'Ultima copia: '+fmtDate(pr.lastBackup)+'.':'Non hai ancora fatto una copia.')+'</p><div style="display:flex;flex-direction:column;gap:10px"><button class="btn primary" data-act="backup">Salva una copia di sicurezza</button><label class="btn" for="restore-in" style="cursor:pointer">Ripristina da un file</label><input class="sr" type="file" id="restore-in" accept=".json,application/json,text/plain"><div style="display:flex;justify-content:space-between;gap:8px"><button class="linkbtn" data-act="export">Copia come testo</button><button class="linkbtn" data-act="import">Incolla il testo</button></div><button class="btn" data-act="onb-replay">Rivedi la guida rapida</button><button class="btn danger" data-act="reset">Cancella tutto</button></div></div>';
   h+='<p class="note">Elenco dei modelli: auto nuove immatricolate in Italia dal 2018 al 2025. Fonte: Agenzia europea dell’ambiente (EEA), licenza CC BY 4.0. Se non trovi il tuo modello, scegli “Altro modello”.</p>';
   return h;
 }
@@ -958,11 +967,13 @@ function onbVis(k){
 }
 function viewOnb(){
   var i=ui.onb||0,s=ONB[i],last=i===ONB.length-1,rp=!!ui.onbReplay;
+  var shp=(S.profile&&S.profile.shop&&waNumber(S.profile.shop.phone))?S.profile.shop:null;
+  var shopChip=shp?'<div style="margin-bottom:14px"><span class="chip ok">Collegata a '+esc(shp.name||'la tua officina')+'</span></div>':'';
   var dots=ONB.map(function(x,k){return '<span style="width:'+(k===i?22:8)+'px;height:8px;border-radius:4px;background:'+(k===i?'var(--link)':'var(--line)')+'"></span>';}).join('');
   var art=s.ill?'<div style="display:flex;justify-content:center"><span class="illo lg" style="background:'+BG[s.ill]+'">'+illo(s.ill)+'</span></div>':'<div style="min-height:164px;display:flex;align-items:center;justify-content:center">'+onbVis(s.vis)+'</div>';
   var main=last?(rp?'<button class="btn primary block big" data-act="onb-skip">Ho capito</button>':'<button class="btn primary block big" data-act="onb-start">'+ic('plus')+'Aggiungi la mia auto</button>'):'<button class="btn primary block big" data-act="onb-next">Avanti</button>';
   var foot='<div style="display:flex;justify-content:space-between;margin-top:8px">'+(i>0?'<button class="linkbtn" data-act="onb-prev">← Indietro</button>':'<span></span>')+(last?(rp?'<span></span>':'<button class="linkbtn" data-act="onb-skip">Lo faccio dopo</button>'):'<button class="linkbtn" data-act="onb-skip">'+(rp?'Chiudi':'Salta')+'</button>')+'</div>';
-  return '<div style="padding-top:20px;text-align:center">'+art+'<h1 style="margin-top:24px">'+esc(s.t)+'</h1><p style="font-size:17px;color:var(--muted);margin:8px 8px 22px">'+esc(s.p)+'</p><div style="display:flex;gap:6px;justify-content:center;margin-bottom:22px">'+dots+'</div>'+main+foot+'</div>';
+  return '<div style="padding-top:20px;text-align:center">'+shopChip+art+'<h1 style="margin-top:24px">'+esc(s.t)+'</h1><p style="font-size:17px;color:var(--muted);margin:8px 8px 22px">'+esc(s.p)+'</p><div style="display:flex;gap:6px;justify-content:center;margin-bottom:22px">'+dots+'</div>'+main+foot+'</div>';
 }
 
 /* ---- avviso con "Annulla" ---- */
@@ -1013,7 +1024,7 @@ function wzCap(step){
   var q=function(sel){var e=document.querySelector(sel);return e?e.value:undefined;};
   if(step===1)ui.wz[1]={km:val('w-km'),year:q('input[name=wy]:checked')};
   else if(step===2)ui.wz[2]={mode:q('input[name=wt]:checked'),every:val('w-every'),last:val('w-last')};
-  else if(step===3)ui.wz[3]={rev:val('s-revisione'),bol:val('s-bollo')};
+  else if(step===3)ui.wz[3]={rev:val('s-revisione'),bol:val('s-bollo'),revAmt:val('s-rev-amt'),bolAmt:val('s-bol-amt')};
   else if(step===4)ui.wz[4]={date:val('s-assicurazione'),mode:q('input[name=im]:checked'),amt:val('im-amt')};
 }
 function wizHead(n,v){return '<div style="font-size:13px;font-weight:800;color:var(--link);margin-top:4px">Passo '+n+' di 4</div><p style="margin:4px 0 0;font-weight:800">'+esc(v.name)+'</p>';}
@@ -1044,7 +1055,9 @@ function wizScad(vid){
   var v=vOf(vid);if(!v)return;var st=wzSt(3);
   openSheet('Revisione e bollo',wizHead(3,v)+
     '<label for="s-revisione">Quando scade la revisione?</label><input type="date" id="s-revisione" value="'+esc(st.rev||'')+'"><div class="hint">Guarda il bollino sul libretto. La prima revisione è di solito dopo 4 anni dall’immatricolazione, poi ogni 2: verifica sul libretto.</div>'+
-    '<label for="s-bollo">Quando scade il bollo?</label><input type="date" id="s-bollo" value="'+esc(st.bol||'')+'"><div class="hint">Il mese di scadenza del bollo.</div>',wizBtns(vid,3,false));
+    '<label for="s-rev-amt">Quanto costa di solito la revisione? (€, facoltativo)</label><input type="text" inputmode="decimal" id="s-rev-amt" value="'+esc(st.revAmt||'')+'" placeholder="€" autocomplete="off">'+
+    '<label for="s-bollo">Quando scade il bollo?</label><input type="date" id="s-bollo" value="'+esc(st.bol||'')+'"><div class="hint">Il mese di scadenza del bollo.</div>'+
+    '<label for="s-bol-amt">Quanto costa il bollo? (€, facoltativo)</label><input type="text" inputmode="decimal" id="s-bol-amt" value="'+esc(st.bolAmt||'')+'" placeholder="€" autocomplete="off"><div class="hint">Se scrivi gli importi, li ritrovi già compilati quando tocchi “Fatto”, e finiscono nelle spese.</div>',wizBtns(vid,3,false));
 }
 function wizIns(vid){
   var v=vOf(vid);if(!v)return;var st=wzSt(4);var mode=st.mode||'annuale';
@@ -1082,7 +1095,7 @@ function wizNext(vid,step,skip){
       }
     }else if(step===3){
       wizClean(v,3);
-      ['revisione','bollo'].forEach(function(k){var e=document.getElementById('s-'+k);if(e&&e.value)S.deadlines.push({id:uid(),vehicleId:v.id,kind:k,date:e.value,note:'',wz:3});});
+      ['revisione','bollo'].forEach(function(k){var e=document.getElementById('s-'+k);var am=num(val(k==='revisione'?'s-rev-amt':'s-bol-amt'));if(e&&e.value)S.deadlines.push({id:uid(),vehicleId:v.id,kind:k,date:e.value,note:'',wz:3,amount:am>0?am:undefined});});
     }else if(step===4){
       wizClean(v,4);
       var dt=val('s-assicurazione');if(dt)S.deadlines.push({id:uid(),vehicleId:v.id,kind:'assicurazione',date:dt,note:'',wz:4});
@@ -1147,6 +1160,7 @@ function monthChart(items){
 }
 function finishOnb(){S.profile=S.profile||{name:'',photo:''};S.profile.onboarded=true;save();ui.tab=ui.onbReplay?'profilo':'home';ui.onbReplay=false;ui.onb=0;}
 function render(){
+  if(S.profile&&!S.profile.since){S.profile.since=iso(today());save();}
   var nv=document.querySelector('nav.tabs');if(nv)nv.hidden=(ui.tab==='onb');
   var act=ui.tab==='spese'?'spese':ui.tab==='profilo'?'profilo':'home';
   var tabs=[['home','Home','home'],['spese','Spese','chart'],['profilo','Profilo','user']];
@@ -1168,6 +1182,8 @@ function viewSpese(){
   if(!S.vehicles.length)return h+'<div class="card empty"><p>Quando aggiungi un veicolo e registri tagliandi, bolli, assicurazione e gomme, le spese compaiono qui da sole.</p></div>';
   h+='<label for="period" style="margin-top:8px">Periodo</label><select id="period"><option value="12m"'+(ui.period==='12m'?' selected':'')+'>Ultimi 12 mesi</option>'+years.map(function(y){return '<option value="'+y+'"'+(ui.period===y?' selected':'')+'>Anno '+y+'</option>';}).join('')+'</select>';
   h+='<div class="hero"><span class="meta">Totale</span><div class="big">'+esc(eur(total))+'</div>'+(ui.period==='12m'?'<div class="meta">circa '+esc(eur(total/12))+' al mese</div>':'')+'</div>';
+  var fc=S.deadlines.filter(function(d){var n=parse(d.date)?daysTo(d.date):null;return d.amount>0&&n!==null&&n>=-30&&n<=365&&vOf(d.vehicleId);});
+  if(fc.length){var ft=fc.reduce(function(a,d){return a+d.amount;},0);h+='<div class="card" style="margin-top:12px"><div style="color:var(--muted);font-weight:700">In arrivo nei prossimi 12 mesi</div><div style="font-size:26px;font-weight:800;margin-top:2px">'+esc(eur(ft))+'</div><div style="font-size:13px;color:var(--muted)">'+fc.length+(fc.length===1?' scadenza con un importo previsto':' scadenze con un importo previsto')+'</div></div>';}
   if(!items.length){
     h+='<div class="card empty"><p>Nessuna spesa in questo periodo. Le spese arrivano da sole dalle schede dei tuoi veicoli: tagliandi, bolli, assicurazione, revisioni, gomme e altre spese.</p></div>';
     return h;
@@ -1274,12 +1290,13 @@ function sheetDeadline(id,vid){
     "<label for=\"d-veh\">Veicolo</label><select id=\"d-veh\">"+vehOpts(d.vehicleId)+"</select>"+
     "<label for=\"d-kind\">Cosa scade</label><select id=\"d-kind\">"+kindOpts(v,kind)+"</select>"+
     "<label for=\"d-date\">Data di scadenza</label><input type=\"date\" id=\"d-date\" value=\""+esc(d.date)+"\">"+
+    "<label for=\"d-amt\">Quanto costa? (€, facoltativo)</label><input type=\"text\" inputmode=\"decimal\" id=\"d-amt\" value=\""+(d.amount||"")+"\" placeholder=\"€\" autocomplete=\"off\">"+
     "<label for=\"d-note\">Nota (facoltativa)</label><input type=\"text\" id=\"d-note\" value=\""+esc(d.note||"")+"\" autocomplete=\"off\">",
     (id?"<button class=\"btn danger\" data-act=\"del-deadline\" data-id=\""+id+"\">Elimina</button>":CANCEL)+"<button class=\"btn primary\" data-act=\"save-deadline\" data-id=\""+(id||"")+"\">Salva</button>");
 }
 function saveDeadline(id){
   var date=val("d-date");if(!parse(date)){err("Inserisci la data di scadenza.");return;}
-  var o={vehicleId:val("d-veh"),kind:val("d-kind"),date:date,note:val("d-note").trim()};
+  var o={vehicleId:val("d-veh"),kind:val("d-kind"),date:date,note:val("d-note").trim(),amount:num(val("d-amt"))||undefined};
   if(id)Object.assign(S.deadlines.find(function(x){return x.id===id;}),o);else{o.id=uid();S.deadlines.push(o);}
   save();closeSheet();render();
 }
@@ -1295,7 +1312,7 @@ function sheetDone(id){
   openSheet('Segna come fatto',
     '<p style="margin:8px 0 0;font-weight:700">'+esc(KINDS[d.kind].label)+' · '+esc(vName(d.vehicleId))+'</p>'+
     '<label for="x-date">Quando l’hai fatto?</label><input type="date" id="x-date" value="'+iso(today())+'">'+
-    (function(){var vv=vOf(d.vehicleId),ia=(d.kind==='assicurazione'&&vv)?insAnnual(vv):0,pre=ia?String(ia).replace('.',','):'';return '<label for="x-amt">'+(d.kind==='assicurazione'?'Quanto hai pagato in totale per quest’anno?':'Quanto hai pagato? (€)')+'</label><input type="text" inputmode="decimal" id="x-amt" placeholder="€" autocomplete="off" value="'+pre+'">'+(pre?'<div class="hint">L’ho calcolato da come la paghi: puoi cambiarlo.</div>':'');})()+
+    (function(){var vv=vOf(d.vehicleId),ia=(d.kind==='assicurazione'&&vv)?insAnnual(vv):0,pre=ia?String(ia).replace('.',','):(d.amount?String(d.amount).replace('.',','):'');return '<label for="x-amt">'+(d.kind==='assicurazione'?'Quanto hai pagato in totale per quest’anno?':'Quanto hai pagato? (€)')+'</label><input type="text" inputmode="decimal" id="x-amt" placeholder="€" autocomplete="off" value="'+pre+'">'+(pre?'<div class="hint">'+(ia?'L’ho calcolato da come la paghi: puoi cambiarlo.':'È l’importo che avevi previsto: puoi cambiarlo.')+'</div>':'');})()+
     (d.kind==='tagliando'?'<label>Tra quanti km lo rifai?</label>'+wizKmChips('x-every',d.everyKm||0):'')+'<label for="x-next">Quando scade la prossima volta?</label><input type="date" id="x-next" value="'+next+'"><div class="hint">L’ho già calcolata io, ma puoi cambiarla. Lascia vuoto se non si ripete.</div>'+
     '<details class="more"><summary>Altri dettagli</summary><label for="x-km" style="margin-top:0">Chilometri adesso</label><input type="text" inputmode="numeric" id="x-km" autocomplete="off"'+(vOf(d.vehicleId)&&vOf(d.vehicleId).km?' value="'+kmNow(vOf(d.vehicleId))+'"':'')+'>'+((km&&d.kind!=='tagliando')?'<label for="x-every">Ogni quanti km si ripete?</label><input type="text" inputmode="numeric" id="x-every" autocomplete="off" value="'+(d.everyKm||'')+'" placeholder="Per esempio: 15000">':'')+'<div style="height:14px"></div></details>',
     CANCEL+'<button class="btn primary" data-act="save-done" data-id="'+id+'">Conferma</button>');
@@ -1307,6 +1324,7 @@ function saveDone(id){
   var v=vOf(d.vehicleId);
   var kmv=Math.round(num(val('x-km')))||0,every=Math.round(num(val('x-every')))||0;
   S.log.push({id:uid(),vehicleId:d.vehicleId,date:date,kind:d.kind,amount:num(val('x-amt')),km:kmv,note:d.note||''});
+  if(num(val('x-amt'))>0)d.amount=num(val('x-amt'));
   if(kmv&&v){v.km=kmv;v.kmAt=iso(today());}
   if(every)d.everyKm=every;
   var baseKm=kmv||(v&&kmNow(v))||0;
@@ -1344,11 +1362,84 @@ function sheetImport(){
   openSheet("Ripristina da copia","<p class=\"sub\" style=\"margin-top:8px\">Incolla qui la copia di sicurezza. I dati attuali verranno sostituiti.</p><label for=\"bk\">Dati</label><textarea id=\"bk\"></textarea>",
     CANCEL+"<button class=\"btn primary\" data-act=\"do-import\">Ripristina</button>");
 }
+var APP_VERSION='v6';
+function supportCfg(){return window.MONITOR_SUPPORT||{};}
+function deviceInfo(){var ua=navigator.userAgent||'';var os=/iphone|ipad|ipod/i.test(ua)?'iPhone/iPad':(/android/i.test(ua)?'Android':'computer');return os+(isStandalone()?', app installata':', browser');}
+function supportBlock(){
+  var c=supportCfg();if(!c.wa&&!c.mail)return '';
+  var msg='Ciao! Ti scrivo da Monitor ('+APP_VERSION+').\n\n[Scrivi qui cosa non va o la tua idea]\n\n— '+deviceInfo();
+  var h='<div class="section-head"><h2>Scrivici</h2></div><div class="card" style="margin-top:10px"><p style="margin:0 0 12px;color:var(--muted)">Qualcosa non va, o hai un’idea? Scrivici: ci metti 10 secondi e ci aiuti molto.</p><div style="display:flex;flex-direction:column;gap:10px">';
+  if(c.wa)h+='<a class="btn primary big" href="https://wa.me/'+waNumber(c.wa)+'?text='+encodeURIComponent(msg)+'" target="_blank" rel="noopener">Scrivici su WhatsApp</a>';
+  if(c.mail)h+='<a class="btn'+(c.wa?'':' primary big')+'" href="mailto:'+esc(c.mail)+'?subject='+encodeURIComponent('Monitor – segnalazione')+'&body='+encodeURIComponent(msg)+'">Scrivici una mail</a>';
+  return h+'</div></div>';
+}
+/* ---- copia di sicurezza con un tocco ---- */
+function markBackup(){S.profile=S.profile||{name:'',photo:''};S.profile.lastBackup=iso(today());S.profile.snooze='';save();}
+function inFrame(){try{return window.self!==window.top;}catch(e){return true;}}
+function backupShare(){
+  if(inFrame()){sheetExport();return;}
+  var json=exportData(),name='monitor-copia-'+iso(today())+'.json';
+  var file=null;try{file=new File([json],name,{type:'application/json'});}catch(e){}
+  var done=function(msg){markBackup();render();showToast(msg);};
+  var fallback=function(){
+    try{var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([json],{type:'application/json'}));a.download=name;document.body.appendChild(a);a.click();a.remove();done('Copia scaricata');}
+    catch(e){sheetExport();}
+  };
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+    navigator.share({files:[file],title:'Copia di sicurezza Monitor'}).then(function(){done('Copia salvata');},function(e){if(!e||e.name!=='AbortError')fallback();});
+  }else fallback();
+}
+function readBackupFile(f){
+  if(!f)return;
+  var fr=new FileReader();
+  fr.onload=function(){
+    try{
+      var o=JSON.parse(fr.result);
+      if(!o||!Array.isArray(o.vehicles)||!Array.isArray(o.deadlines)||!Array.isArray(o.log))throw new Error('x');
+      ui.pendingRestore=o;
+      sheetConfirm('In questa copia ci sono '+o.vehicles.length+(o.vehicles.length===1?' veicolo':' veicoli')+' e '+o.log.length+(o.log.length===1?' voce di spesa':' voci di spesa')+'. Sostituire i tuoi dati con quelli della copia?','do-restore');
+    }catch(e){showToast('Questo file non è una copia di Monitor.');}
+  };
+  fr.readAsText(f);
+}
+function backupDue(){
+  if(!S.vehicles.length)return false;
+  var pr=S.profile||{},t=iso(today());
+  if(pr.snooze&&pr.snooze>t)return false;
+  if(daysTo(pr.since||t)>-7)return false;
+  if(!pr.lastBackup)return true;
+  return daysTo(pr.lastBackup)<-30;
+}
+function backupCard(){
+  if(!backupDue())return '';
+  var pr=S.profile||{};
+  return '<div class="card" style="margin-top:12px"><div style="font-weight:800">'+(pr.lastBackup?'Fai una nuova copia dei tuoi dati':'Metti al sicuro i tuoi dati')+'</div><div style="font-size:13px;color:var(--muted);margin-top:2px">I dati stanno solo su questo telefono: se lo cambi o cancelli i dati del browser, si perdono. Ci vogliono 5 secondi.</div><div style="display:flex;gap:10px;margin-top:12px"><button class="btn" style="flex:1" data-act="snooze-backup">Più tardi</button><button class="btn primary" style="flex:1" data-act="backup">Salva ora</button></div></div>';
+}
+/* ---- link dell'officina (QR) ---- */
+function applyShopLink(){
+  try{
+    var q=new URLSearchParams(location.search);
+    var nm=(q.get('officina')||q.get('o')||'').trim(),tel=(q.get('tel')||q.get('t')||'').trim();
+    if(!tel||waNumber(tel).length<8)return;
+    var cur=(S.profile&&S.profile.shop)||{};
+    if(waNumber(cur.phone)===waNumber(tel))return;
+    if(!waNumber(cur.phone)){S.profile=S.profile||{name:'',photo:''};S.profile.shop={name:nm,phone:tel};save();ui.shopWelcome=nm||'la tua officina';}
+    else ui.shopOffer={name:nm,phone:tel};
+  }catch(e){}
+}
+function sheetShopOffer(){
+  var o=ui.shopOffer;if(!o)return;
+  openSheet('Nuova officina','<p style="margin:8px 0 0">Questo link propone di usare <b>'+esc(o.name||'un’altra officina')+'</b> per le prenotazioni. Adesso hai impostato <b>'+esc((S.profile.shop||{}).name||'un’altra officina')+'</b>. Vuoi cambiarla?</p>','<button class="btn" data-act="close">No, tieni la mia</button><button class="btn primary" data-act="shop-accept">Sì, usa questa</button>');
+}
+function applyImport(o){
+  S={vehicles:o.vehicles.map(function(v){var c=vOf(v.id);return c&&c.photo?Object.assign({},v,{photo:c.photo}):v;}),deadlines:o.deadlines,log:o.log,policies:Array.isArray(o.policies)?o.policies:[],profile:Object.assign({},(o.profile&&typeof o.profile==='object')?o.profile:{name:'',photo:''},{licenza:Object.assign({},(S.profile||{}).licenza||{},((o.profile||{}).licenza||{})),lock:(S.profile||{}).lock}),docs:(S.docs||[]).filter(function(x){return o.vehicles.some(function(v){return v.id===x.vehicleId;});})};
+  S.profile.lastBackup=iso(today());save();closeSheet();ui.tab='profilo';render();showToast('Dati ripristinati');
+}
 function doImport(){
   try{
     var o=JSON.parse(val('bk'));
     if(!o||!Array.isArray(o.vehicles)||!Array.isArray(o.deadlines)||!Array.isArray(o.log))throw new Error('x');
-    S={vehicles:o.vehicles.map(function(v){var c=vOf(v.id);return c&&c.photo?Object.assign({},v,{photo:c.photo}):v;}),deadlines:o.deadlines,log:o.log,policies:Array.isArray(o.policies)?o.policies:[],profile:Object.assign({},(o.profile&&typeof o.profile==='object')?o.profile:{name:'',photo:''},{licenza:Object.assign({},(S.profile||{}).licenza||{},((o.profile||{}).licenza||{})),lock:(S.profile||{}).lock}),docs:(S.docs||[]).filter(function(x){return o.vehicles.some(function(v){return v.id===x.vehicleId;});})};save();closeSheet();ui.tab='profilo';render();
+    applyImport(o);
   }catch(e){err('Il testo non è una copia di sicurezza valida.');}
 }
 function sheetPickKind(vid){
@@ -1360,6 +1451,7 @@ function sheetNewDeadline(vid,kind){
   var km=KMKINDS.indexOf(kind)>=0;
   openSheet('Quando scade: '+KINDS[kind].label+'?',
     '<label for="n-date">Data di scadenza</label><input type="date" id="n-date"><div class="hint">Se non la ricordi, guarda sul libretto o sulla polizza.</div>'+
+    '<label for="n-amt">Quanto costa? (€, facoltativo)</label><input type="text" inputmode="decimal" id="n-amt" placeholder="€" autocomplete="off"><div class="hint">Se lo sai, o se è simile all’ultima volta, scrivilo: quando tocchi “Fatto” lo ritrovi già compilato e finisce nelle spese.</div>'+
     (km?'<details class="more"><summary>Controlla anche i chilometri</summary><label for="n-km" style="margin-top:0">A quanti km è il prossimo?</label><input type="text" inputmode="numeric" id="n-km" autocomplete="off" placeholder="Per esempio: 70000"><label for="n-every">Ogni quanti km si ripete?</label><input type="text" inputmode="numeric" id="n-every" autocomplete="off" placeholder="Per esempio: 15000" style="margin-bottom:14px"></details>':'')+
     '<details class="more"><summary>Aggiungi una nota</summary><input type="text" id="n-note" autocomplete="off" style="margin-bottom:14px"></details>',
     '<button class="btn" data-act="add-deadline" data-id="'+vid+'">Indietro</button><button class="btn primary" data-act="save-newdl" data-id="'+vid+'" data-kind="'+kind+'">Salva</button>');
@@ -1367,6 +1459,7 @@ function sheetNewDeadline(vid,kind){
 function saveNewDeadline(vid,kind){
   var date=val('n-date');if(!parse(date)){err('Scegli la data di scadenza.');return;}
   var d={id:uid(),vehicleId:vid,kind:kind,date:date,note:val('n-note').trim()};
+  var am=num(val('n-amt'));if(am>0)d.amount=am;
   var kd=Math.round(num(val('n-km')))||0,ev=Math.round(num(val('n-every')))||0;
   if(kd)d.kmDue=kd;if(ev)d.everyKm=ev;
   S.deadlines.push(d);save();closeSheet();render();
@@ -1434,6 +1527,10 @@ document.addEventListener('click',function(e){
     case 'edit-buy':sheetBuy(id);break;
     case 'save-buy':saveBuy(id);break;
     case 'del-buy':withUndo('Dati dell’acquisto eliminati',function(){var vb=vOf(id);if(vb){delete vb.buy;save();render();}});break;
+    case 'backup':backupShare();break;
+    case 'snooze-backup':var sd=new Date(today());sd.setDate(sd.getDate()+14);S.profile=S.profile||{name:'',photo:''};S.profile.snooze=iso(sd);save();render();break;
+    case 'do-restore':if(ui.pendingRestore)applyImport(ui.pendingRestore);ui.pendingRestore=null;break;
+    case 'shop-accept':if(ui.shopOffer){S.profile=S.profile||{name:'',photo:''};S.profile.shop={name:ui.shopOffer.name,phone:ui.shopOffer.phone};ui.shopOffer=null;save();closeSheet();render();showToast('Officina salvata');}break;
     case 'edit-name':ui.editName=true;render();break;
     case 'save-name':S.profile=S.profile||{name:'',photo:''};S.profile.name=val('pf-name').trim();ui.editName=false;save();render();showToast('Nome salvato');break;
     case 'edit-shop':ui.editShop=true;render();break;
@@ -1494,6 +1591,7 @@ document.addEventListener('click',function(e){
 document.addEventListener('change',function(e){
   var id=e.target.id;
   if(id==='photo-in'){handlePhoto(e.target.files&&e.target.files[0]);e.target.value='';return;}
+  if(id==='restore-in'){readBackupFile(e.target.files&&e.target.files[0]);e.target.value='';return;}
   if(e.target.name==='bm'){var bx=$('#b-ratebox');if(bx)bx.hidden=(e.target.value!=='rate');return;}
   if(e.target.name==='wt'){var pb=$('#w-pastbox');if(pb)pb.hidden=(e.target.value!=='past');return;}
   if(id==='x-km'){recalcNext();return;}
@@ -1525,8 +1623,11 @@ document.addEventListener('change',function(e){
     y0=null;drag=false;
   });
 })();
+applyShopLink();
 if(!S.vehicles.length&&!(S.profile&&S.profile.onboarded)){ui.tab='onb';ui.onb=0;}
 render();
+if(ui.shopWelcome){showToast('Officina collegata: '+ui.shopWelcome);ui.shopWelcome=null;}
+if(ui.shopOffer)sheetShopOffer();
 })();
 </script>
 <script>
