@@ -366,7 +366,7 @@ function kindsFor(v){
   if(v.type==="bici")return["tagliando","catena","freni","forcella","gomme","altro"];
   var k=["revisione","assicurazione","bollo","tagliando"];
   if(v.type==="auto"&&v.cambio)k.push("cambio");
-  k.push("gomme","altro");return k;
+  k.push("gomme","altro");if(v.bolloExempt)k=k.filter(function(x){return x!=="bollo";});return k;
 }
 
 /* ---------- viste ---------- */
@@ -549,7 +549,8 @@ function sheetExtraVeh(){
   openSheet('Per quale veicolo?','<div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">'+S.vehicles.map(function(v){return '<button class="btn block big" data-act="extra-veh" data-id="'+v.id+'">'+esc(v.name)+'</button>';}).join('')+'</div>',CANCEL);
 }
 var HOMEFAM=['home','garage','veicolo','sezione','casa','ass','storico'];
-function saveHomeLoc(){if(HOMEFAM.indexOf(ui.tab)>=0)ui.homeLoc={tab:ui.tab,vf:ui.vf,vid:ui.vid,sec:ui.sec,scroll:window.scrollY||0};}
+function secBack(v){return ui.fromSpese?'<button class="btn small" data-act="tab" data-tab="spese">← Spese</button>':'<button class="btn small" data-act="open-veh" data-id="'+v.id+'">← '+esc(v.name)+'</button>';}
+function saveHomeLoc(){if(ui.fromSpese)return;if(HOMEFAM.indexOf(ui.tab)>=0)ui.homeLoc={tab:ui.tab,vf:ui.vf,vid:ui.vid,sec:ui.sec,scroll:window.scrollY||0};}
 function vehTile(v){
   var late=0,soon=0;
   S.deadlines.forEach(function(d){if(d.vehicleId===v.id&&parse(d.date)){var n=daysTo(d.date);if(n<0)late++;else if(n<=30)soon++;}});
@@ -592,7 +593,7 @@ function buyTile(v){
 }
 function viewAcquisto(v){
   var b=v.buy;
-  var h='<button class="btn small" data-act="open-veh" data-id="'+v.id+'">← '+esc(v.name)+'</button><h1>Acquisto e rata</h1><p class="sub">'+esc(v.name)+'</p>';
+  var h=secBack(v)+'<h1>Acquisto e rata</h1><p class="sub">'+esc(v.name)+'</p>';
   if(!b){
     return h+'<div class="card empty" style="margin-top:12px"><p>Scrivi quando l’hai comprata e come l’hai pagata. Se è a rate, le rate si sommano da sole alle tue spese, senza scadenze e senza avvisi da ricordare.</p><button class="btn primary block big" data-act="edit-buy" data-id="'+v.id+'">'+ic('plus')+'Aggiungi l’acquisto</button></div>';
   }
@@ -661,6 +662,7 @@ function secTile(v,k){
   else sub=lg.length?'Ultimo: '+fmtShort(lg[0].date):'Nessuno registrato';
   if(k==='assicurazione'&&v.ins&&PAYM[v.ins.mode]&&v.ins.amount)sub+=' · '+eur(v.ins.amount);
   if(ds.length){var n=daysTo(ds[0].date);if(n<=30)chip='<span class="chip '+(n<0?'late':'warn')+'">'+(n<0?'Scaduta':'Scade presto')+'</span>';}
+  if(k==='bolli'&&v.bolloExempt){sub='Esente dal bollo';chip='<span class="chip ok">Esente</span>';}
   return '<button class="stile" data-act="open-sec" data-id="'+v.id+'" data-sec="'+k+'"><span class="st-ico" style="background:'+c.bg+'">'+ic(c.icon,26)+'</span><span class="st-t">'+esc(c.title)+'</span><span class="st-s">'+esc(sub)+'</span>'+chip+'</button>';
 }
 function viewVeicolo(){
@@ -688,7 +690,7 @@ function viewSezione(){
   var ds=S.deadlines.filter(function(d){return d.vehicleId===v.id&&c.kinds.indexOf(d.kind)>=0&&parse(d.date);}).sort(byDate);
   var lg=S.log.filter(function(l){return l.vehicleId===v.id&&c.kinds.indexOf(l.kind)>=0;}).sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:0;});
   var tot=lg.reduce(function(a,l){return a+(l.amount||0);},0);
-  var h='<button class="btn small" data-act="open-veh" data-id="'+v.id+'">← '+esc(v.name)+'</button>';
+  var h=secBack(v);
   h+='<h1>'+esc(c.title)+'</h1><p class="sub">'+esc(v.name)+'</p>';
   if(ui.sec==='assicurazione'){
     var ins=v.ins,at=insAnnual(v);
@@ -700,17 +702,25 @@ function viewSezione(){
     }
     h+='</div>';
   }
+  if(ui.sec==='bolli'){
+    if(v.bolloExempt){
+      h+='<div class="vcard" style="margin-top:12px"><h2 style="font-size:17px">Esente dal bollo</h2><p style="margin:8px 0 12px;color:var(--muted)">Hai segnalato che questo veicolo è esente: non c’è nessuna scadenza e nessuna spesa da registrare.</p><button class="btn block" data-act="bollo-exempt" data-id="'+v.id+'" data-val="0">Non è più esente</button></div>';
+    }else if(isOld30(v)){
+      h+='<div class="vcard" style="margin-top:12px"><h2 style="font-size:17px">Auto storica?</h2><p style="margin:8px 0 12px;color:var(--muted)">Ha più di 30 anni. Se è esente dal bollo, segnalalo: niente scadenza e niente spesa. L’esenzione dipende dalla tua Regione e da come è iscritta l’auto: controlla con l’ACI o con la Regione.</p><button class="btn primary block" data-act="bollo-exempt" data-id="'+v.id+'" data-val="1">È esente dal bollo</button></div>';
+    }
+  }
   if(ui.sec==='altro'){
     h+='<button class="btn primary block big" style="margin-top:14px" data-act="past" data-id="'+v.id+'">'+ic('plus')+'Aggiungi una spesa extra</button>';
     h+='<button class="btn block big" style="margin-top:10px" data-act="new-dl" data-id="'+v.id+'" data-kind="'+(c.dlKind||c.kinds[0])+'">'+ic('plus')+'Imposta una scadenza</button>';
     if(ds.length)h+='<div class="section-head"><h2>Scadenze</h2></div><div class="vcard" style="margin-top:10px">'+ds.map(dlRow).join('')+'</div>';
-  }else{
+  }else if(!(ui.sec==='bolli'&&v.bolloExempt)){
   h+='<div class="vcard" style="margin-top:12px"><h2 style="font-size:17px">'+esc(c.nextLbl)+'</h2>';
   h+=ds.length?ds.map(dlRow).join(''):'<p style="margin:8px 0 12px;color:var(--muted)">Non hai ancora impostato la scadenza.</p><button class="btn primary block big" data-act="new-dl" data-id="'+v.id+'" data-kind="'+(c.dlKind||c.kinds[0])+'">'+ic('plus')+'Imposta la scadenza</button>';
   h+='</div>';
   }
-  h+='<div class="section-head"><h2>Storico</h2></div>';
-  if(!lg.length)h+='<div class="card empty" style="margin-top:10px"><p style="margin:0">'+esc(c.emptyH)+'</p></div>';
+  var hideHist=(ui.sec==='bolli'&&v.bolloExempt&&!lg.length);
+  if(!hideHist)h+='<div class="section-head"><h2>Storico</h2></div>';
+  if(hideHist){}else if(!lg.length)h+='<div class="card empty" style="margin-top:10px"><p style="margin:0">'+esc(c.emptyH)+'</p></div>';
   else{
     h+='<div class="list">'+lg.map(function(l){
       var sub=[];if(c.kinds.length>1&&!l.title)sub.push((LOGKINDS[l.kind]||{label:l.kind}).label);if(l.km)sub.push(fmtKm(l.km)+' km');if(l.note)sub.push(l.note);
@@ -718,7 +728,8 @@ function viewSezione(){
     }).join('')+'</div>';
     if(tot)h+='<p style="margin:10px 4px 0;color:var(--muted)">'+esc(c.sum)+': <b style="color:var(--ink)">'+esc(eur(tot))+'</b></p>';
   }
-  if(ui.sec!=='altro')h+='<button class="btn block big" style="margin-top:16px" data-act="past" data-id="'+v.id+'">'+ic('plus')+esc(c.addLbl)+'</button>';
+  if(ui.sec!=='altro'&&!(ui.sec==='bolli'&&v.bolloExempt))h+='<button class="btn block big" style="margin-top:16px" data-act="past" data-id="'+v.id+'">'+ic('plus')+esc(c.addLbl)+'</button>';
+  if(ui.sec==='bolli'&&!v.bolloExempt&&!isOld30(v))h+='<button class="linkbtn" style="margin-top:8px" data-act="bollo-exempt" data-id="'+v.id+'" data-val="1">Il veicolo è esente dal bollo?</button>';
   return h;
 }
 function sheetPast(vid){
@@ -990,6 +1001,7 @@ function withUndo(msg,fn){var snap=JSON.stringify(S);var r=fn();if(r===false)ret
 /* ---- chilometri stimati: l'utente non deve aggiornarli ---- */
 var KMYEAR=[[10000,'Pochi','circa 10.000 km'],[25000,'Normali','circa 25.000 km'],[40000,'Tanti','oltre 40.000 km']];
 function nearestYear(n){var b=KMYEAR[1][0],d=1e9;KMYEAR.forEach(function(o){var x=Math.abs(o[0]-n);if(x<d){d=x;b=o[0];}});return b;}
+function isOld30(v){var d=v&&v.immat?parse(v.immat):null;if(!d)return false;return addMonths(v.immat,360)<=iso(today());}
 function kmNow(v){
   if(!v||!v.km)return 0;
   if(v.kmYear&&v.kmAt){var d0=parse(v.kmAt);if(d0){var days=Math.max(0,Math.round((today()-d0)/86400000));return v.km+Math.round(days/365*v.kmYear);}}
@@ -1025,7 +1037,7 @@ function wzCap(step){
   var q=function(sel){var e=document.querySelector(sel);return e?e.value:undefined;};
   if(step===1)ui.wz[1]={km:val('w-km'),year:q('input[name=wy]:checked')};
   else if(step===2)ui.wz[2]={mode:q('input[name=wt]:checked'),every:val('w-every'),last:val('w-last')};
-  else if(step===3)ui.wz[3]={rev:val('s-revisione'),bol:val('s-bollo'),revAmt:val('s-rev-amt'),bolAmt:val('s-bol-amt')};
+  else if(step===3)ui.wz[3]={rev:val('s-revisione'),bol:val('s-bollo'),revAmt:val('s-rev-amt'),bolAmt:val('s-bol-amt'),bolEx:!!(document.getElementById('s-bol-ex')&&document.getElementById('s-bol-ex').checked)};
   else if(step===4)ui.wz[4]={date:val('s-assicurazione'),mode:q('input[name=im]:checked'),amt:val('im-amt')};
 }
 function wizHead(n,v){return '<div style="font-size:13px;font-weight:800;color:var(--link);margin-top:4px">Passo '+n+' di 4</div><p style="margin:4px 0 0;font-weight:800">'+esc(v.name)+'</p>';}
@@ -1058,7 +1070,8 @@ function wizScad(vid){
     '<label for="s-revisione">Quando scade la revisione?</label><input type="date" id="s-revisione" value="'+esc(st.rev||'')+'"><div class="hint">Guarda il bollino sul libretto. La prima revisione è di solito dopo 4 anni dall’immatricolazione, poi ogni 2: verifica sul libretto.</div>'+
     '<label for="s-rev-amt">Quanto costa di solito la revisione? (€, facoltativo)</label><input type="text" inputmode="decimal" id="s-rev-amt" value="'+esc(st.revAmt||'')+'" placeholder="€" autocomplete="off">'+
     '<label for="s-bollo">Quando scade il bollo?</label><input type="date" id="s-bollo" value="'+esc(st.bol||'')+'"><div class="hint">Il mese di scadenza del bollo.</div>'+
-    '<label for="s-bol-amt">Quanto costa il bollo? (€, facoltativo)</label><input type="text" inputmode="decimal" id="s-bol-amt" value="'+esc(st.bolAmt||'')+'" placeholder="€" autocomplete="off"><div class="hint">Se scrivi gli importi, li ritrovi già compilati quando tocchi “Fatto”, e finiscono nelle spese.</div>',wizBtns(vid,3,false));
+    '<label for="s-bol-amt">Quanto costa il bollo? (€, facoltativo)</label><input type="text" inputmode="decimal" id="s-bol-amt" value="'+esc(st.bolAmt||'')+'" placeholder="€" autocomplete="off"><div class="hint">Se scrivi gli importi, li ritrovi già compilati quando tocchi “Fatto”, e finiscono nelle spese.</div>'+
+    '<label class="check" for="s-bol-ex" style="font-size:15px"><input type="checkbox" id="s-bol-ex"'+(st.bolEx?' checked':'')+'> Questo veicolo è esente dal bollo</label><div class="hint">Per esempio un’auto storica. Se lo segni, non ci sono né scadenza né spesa del bollo. Controlla con l’ACI o con la tua Regione se hai diritto all’esenzione.</div>',wizBtns(vid,3,false));
 }
 function wizIns(vid){
   var v=vOf(vid);if(!v)return;var st=wzSt(4);var mode=st.mode||'annuale';
@@ -1096,7 +1109,9 @@ function wizNext(vid,step,skip){
       }
     }else if(step===3){
       wizClean(v,3);
-      ['revisione','bollo'].forEach(function(k){var e=document.getElementById('s-'+k);var am=num(val(k==='revisione'?'s-rev-amt':'s-bol-amt'));if(e&&e.value)S.deadlines.push({id:uid(),vehicleId:v.id,kind:k,date:e.value,note:'',wz:3,amount:am>0?am:undefined});});
+      var exb=document.getElementById('s-bol-ex'),exo=!!(exb&&exb.checked);
+      if(exo)v.bolloExempt=true;else delete v.bolloExempt;
+      ['revisione','bollo'].forEach(function(k){if(k==='bollo'&&exo)return;var e=document.getElementById('s-'+k);var am=num(val(k==='revisione'?'s-rev-amt':'s-bol-amt'));if(e&&e.value)S.deadlines.push({id:uid(),vehicleId:v.id,kind:k,date:e.value,note:'',wz:3,amount:am>0?am:undefined});});
     }else if(step===4){
       wizClean(v,4);
       var dt=val('s-assicurazione');if(dt)S.deadlines.push({id:uid(),vehicleId:v.id,kind:'assicurazione',date:dt,note:'',wz:4});
@@ -1161,9 +1176,10 @@ function monthChart(items){
 }
 function finishOnb(){S.profile=S.profile||{name:'',photo:''};S.profile.onboarded=true;save();ui.tab=ui.onbReplay?'profilo':'home';ui.onbReplay=false;ui.onb=0;}
 function render(){
+  try{if(ui.tab!=='onb')localStorage.setItem('monitor.loc',JSON.stringify({tab:ui.tab,vf:ui.vf,vid:ui.vid,sec:ui.sec,fromSpese:!!ui.fromSpese,ts:Date.now()}));}catch(e){}
   if(S.profile&&!S.profile.since){S.profile.since=iso(today());save();}
   var nv=document.querySelector('nav.tabs');if(nv)nv.hidden=(ui.tab==='onb');
-  var act=ui.tab==='spese'?'spese':ui.tab==='profilo'?'profilo':'home';
+  var act=(ui.tab==='spese'||(ui.tab==='sezione'&&ui.fromSpese))?'spese':ui.tab==='profilo'?'profilo':'home';
   var tabs=[['home','Home','home'],['spese','Spese','chart'],['profilo','Profilo','user']];
   $('#tabs').innerHTML=tabs.map(function(t){
     return '<button class="tab" data-act="nav" data-tab="'+t[0]+'"'+(act===t[0]?' aria-current="page"':'')+'>'+ic(t[2],22)+t[1]+'</button>';
@@ -1201,7 +1217,7 @@ function viewSpese(){
   if(S.vehicles.length>1)h+='<div class="section-head"><h2>Per veicolo</h2></div><div class="card" style="margin-top:10px">'+bars(byV,vName)+'</div>';
   h+='<div class="section-head"><h2>Tutte le spese</h2></div><div class="list">'+items.slice().sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:0;}).map(function(l){
     var sub=[vName(l.vehicleId),fmtShort(l.date)];if(l.km)sub.push(fmtKm(l.km)+' km');
-    return '<button class="item rowbtn" data-act="open-sec" data-id="'+l.vehicleId+'" data-sec="'+secOfKind(l.kind)+'"><div class="ico">'+ic(kindIcon(l.kind))+'</div><div class="grow"><div class="t">'+esc(l.title||(LOGKINDS[l.kind]||{label:l.kind}).label)+'</div><div class="s">'+esc(sub.join(' · '))+'</div></div><div style="font-weight:800">'+esc(eur(l.amount))+'</div></button>';
+    return '<button class="item rowbtn" data-act="open-sec" data-from="spese" data-id="'+l.vehicleId+'" data-sec="'+secOfKind(l.kind)+'"><div class="ico">'+ic(kindIcon(l.kind))+'</div><div class="grow"><div class="t">'+esc(l.title||(LOGKINDS[l.kind]||{label:l.kind}).label)+'</div><div class="s">'+esc(sub.join(' · '))+'</div></div><div style="font-weight:800">'+esc(eur(l.amount))+'</div></button>';
   }).join('')+'</div>';
   h+='<p class="note">Le spese arrivano da sole dalle schede dei veicoli (tagliandi, bolli, assicurazione, revisioni, gomme e altre spese). Tocca una voce per aprirla.</p>';
   return h;
@@ -1494,11 +1510,11 @@ document.addEventListener('click',function(e){
   switch(a){
     case 'nav':var nt=el.getAttribute('data-tab');
       if(nt==='home'){
-        if(HOMEFAM.indexOf(ui.tab)>=0){if(ui.tab!=='home'){ui.tab='home';ui.vf=null;render();}window.scrollTo(0,0);}
-        else{var LL=ui.homeLoc;if(LL){ui.tab=LL.tab;ui.vf=LL.vf;ui.vid=LL.vid;ui.sec=LL.sec;}else{ui.tab='home';ui.vf=null;}render();window.scrollTo(0,0);if(LL)setTimeout(function(){window.scrollTo(0,LL.scroll||0);},0);}
-      }else{saveHomeLoc();ui.tab=nt;ui.vf=null;render();window.scrollTo(0,0);}
+        if(HOMEFAM.indexOf(ui.tab)>=0&&!ui.fromSpese){if(ui.tab!=='home'){ui.tab='home';ui.vf=null;render();}window.scrollTo(0,0);}
+        else{ui.fromSpese=false;var LL=ui.homeLoc;if(LL){ui.tab=LL.tab;ui.vf=LL.vf;ui.vid=LL.vid;ui.sec=LL.sec;}else{ui.tab='home';ui.vf=null;}render();window.scrollTo(0,0);if(LL)setTimeout(function(){window.scrollTo(0,LL.scroll||0);},0);}
+      }else{saveHomeLoc();ui.fromSpese=false;ui.tab=nt;ui.vf=null;render();window.scrollTo(0,0);}
       break;
-    case 'tab':var dst=el.getAttribute('data-tab');if(dst==='spese'||dst==='profilo')saveHomeLoc();ui.tab=el.getAttribute('data-tab');ui.vf=el.getAttribute('data-vf')||null;render();window.scrollTo(0,0);break;
+    case 'tab':var dst=el.getAttribute('data-tab');if(dst==='spese'||dst==='profilo')saveHomeLoc();ui.fromSpese=false;ui.tab=el.getAttribute('data-tab');ui.vf=el.getAttribute('data-vf')||null;render();window.scrollTo(0,0);break;
     case 'close':closeSheet();break;
     case 'add-vehicle':sheetVehicle();break;
     case 'edit-vehicle':sheetVehicle(id);break;
@@ -1535,6 +1551,7 @@ document.addEventListener('click',function(e){
     case 'snooze-backup':var sd=new Date(today());sd.setDate(sd.getDate()+14);S.profile=S.profile||{name:'',photo:''};S.profile.snooze=iso(sd);save();render();break;
     case 'do-restore':if(ui.pendingRestore)applyImport(ui.pendingRestore);ui.pendingRestore=null;break;
     case 'shop-accept':if(ui.shopOffer){S.profile=S.profile||{name:'',photo:''};S.profile.shop={name:ui.shopOffer.name,phone:ui.shopOffer.phone};ui.shopOffer=null;save();closeSheet();render();showToast('Officina salvata');}break;
+    case 'bollo-exempt':var vx=vOf(id),exOn=el.getAttribute('data-val')==='1';if(vx){if(exOn){withUndo('Segnato come esente dal bollo',function(){vx.bolloExempt=true;S.deadlines=S.deadlines.filter(function(d){return !(d.vehicleId===id&&d.kind==='bollo');});save();render();});}else{delete vx.bolloExempt;save();render();showToast('Il bollo torna a essere una scadenza');}}break;
     case 'edit-name':ui.editName=true;render();break;
     case 'save-name':S.profile=S.profile||{name:'',photo:''};S.profile.name=val('pf-name').trim();ui.editName=false;save();render();showToast('Nome salvato');break;
     case 'edit-shop':ui.editShop=true;render();break;
@@ -1556,8 +1573,8 @@ document.addEventListener('click',function(e){
     case 'veh-color':var cv2=el.getAttribute('data-color'),vv2=vOf(id);if(vv2){vv2.color=cv2;save();render();document.querySelectorAll('.sw[data-act="veh-color"]').forEach(function(b){var on=b.getAttribute('data-color')===cv2;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);});}break;
     case 'veh-photo':sheetVehPhoto(id);break;
     case 'veh-photo-del':withUndo('Foto rimossa',function(){var vv=vOf(id);if(vv)vv.photo='';save();closeSheet();render();});break;
-    case 'open-veh':ui.tab='veicolo';ui.vid=id;render();window.scrollTo(0,0);break;
-    case 'open-sec':ui.tab='sezione';ui.vid=id;ui.sec=el.getAttribute('data-sec');render();window.scrollTo(0,0);break;
+    case 'open-veh':ui.fromSpese=false;ui.tab='veicolo';ui.vid=id;render();window.scrollTo(0,0);break;
+    case 'open-sec':ui.fromSpese=(el.getAttribute('data-from')==='spese');ui.tab='sezione';ui.vid=id;ui.sec=el.getAttribute('data-sec');render();window.scrollTo(0,0);break;
     case 'new-dl':sheetNewDeadline(id,el.getAttribute('data-kind'));break;
     case 'past':if(ui.sec==='altro')sheetExtra(id);else sheetPast(id);break;
     case 'extra-start':sheetExtraVeh();break;
@@ -1627,6 +1644,7 @@ document.addEventListener('change',function(e){
     y0=null;drag=false;
   });
 })();
+try{var LC=JSON.parse(localStorage.getItem('monitor.loc')||'null');if(LC&&S.vehicles.length&&(Date.now()-LC.ts)<30*60*1000&&['home','garage','veicolo','sezione','storico','casa','ass','spese','profilo'].indexOf(LC.tab)>=0){ui.tab=LC.tab;ui.vf=LC.vf||null;ui.vid=LC.vid;ui.sec=LC.sec;ui.fromSpese=!!LC.fromSpese;}}catch(e){}
 applyShopLink();
 if(!S.vehicles.length&&!(S.profile&&S.profile.onboarded)){ui.tab='onb';ui.onb=0;}
 render();
