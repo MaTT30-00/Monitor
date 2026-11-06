@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="only light">
 <meta name="theme-color" content="#BDE2F6">
 <meta name="description" content="Scadenze, tagliandi e spese di auto, moto e bici, sempre sotto controllo.">
 <link rel="manifest" href="manifest.webmanifest">
@@ -35,7 +35,7 @@ window.MONITOR_SUPPORT={form:"",wa:"",mail:""};
   --late-bg:#F7D9D4;--late:#A83A32;--warn-bg:#FBE2CC;--warn:#9A4F1C;--soon-bg:#DCE7F5;--soon:#365B8C;--ok-bg:#DCE8D4;--ok:#3F6340;
   --danger:#A83A32;
   --t-auto:#F5D9CB;--t-moto:#D9E5D2;--t-bici:#F1E6D2;--t-casa:#EFD6D3;--t-ass:#D3E8E3;
-  color-scheme:light;
+  color-scheme:only light;
   box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -252,6 +252,14 @@ body::before{background:var(--bg-top)}
 .xbtn:focus-visible{outline:3px solid var(--link);outline-offset:2px}
 .panel{overscroll-behavior:contain}
 .stile.wide{flex-direction:row;align-items:center;gap:14px;width:100%;min-height:84px;margin-top:12px}
+/* cerchietti e caselle disegnati da noi: uguali su ogni telefono e browser, anche se il sistema è in modalità scura */
+.opt input[type=radio],.check input[type=checkbox]{-webkit-appearance:none;appearance:none;flex:none;margin:0;width:26px;height:26px;border:2px solid #8E88A0;background:#FFFFFF;position:relative;cursor:pointer}
+.opt input[type=radio]{border-radius:50%}
+.check input[type=checkbox]{border-radius:8px}
+.opt input[type=radio]:checked{border-color:var(--brand);background:radial-gradient(circle,var(--brand) 0 6px,#FFFFFF 7px)}
+.check input[type=checkbox]:checked{border-color:var(--brand);background:var(--brand)}
+.check input[type=checkbox]:checked::after{content:"";position:absolute;left:7px;top:2px;width:7px;height:13px;border:solid #FFFFFF;border-width:0 3px 3px 0;transform:rotate(45deg)}
+.opt input[type=radio]:focus-visible,.check input[type=checkbox]:focus-visible{outline:3px solid var(--link);outline-offset:2px}
 </style>
 </head>
 <body>
