@@ -14,11 +14,12 @@
 <meta name="apple-mobile-web-app-title" content="Monitor">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script>
-/* Contatto per il pulsante "Scrivici" nel Profilo. Compila UNO o entrambi i campi, poi salva e ricarica su GitHub.
-   wa  = numero WhatsApp con il prefisso, per esempio "393331234567" (senza + e senza spazi)
-   mail = indirizzo email, per esempio "ciao@esempio.it"
-   Se lasci tutto vuoto, il pulsante non compare. */
-window.MONITOR_SUPPORT={wa:"",mail:""};
+/* Contatto per il pulsante "Scrivici" nel Profilo. Questo file è PUBBLICO: non metterci il tuo numero personale.
+   form = indirizzo di un modulo (per esempio Google Moduli): è la scelta consigliata, nessun recapito esposto.
+   wa   = numero WhatsApp dedicato, con il prefisso, senza + e senza spazi (per esempio "393331234567")
+   mail = indirizzo email dedicato
+   Compila quello che vuoi usare, lascia vuoti gli altri. Se è tutto vuoto, il pulsante non compare. */
+window.MONITOR_SUPPORT={form:"",wa:"",mail:""};
 </script>
 <title>Monitor – scadenze e storico del tuo veicolo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1366,11 +1367,14 @@ var APP_VERSION='v6';
 function supportCfg(){return window.MONITOR_SUPPORT||{};}
 function deviceInfo(){var ua=navigator.userAgent||'';var os=/iphone|ipad|ipod/i.test(ua)?'iPhone/iPad':(/android/i.test(ua)?'Android':'computer');return os+(isStandalone()?', app installata':', browser');}
 function supportBlock(){
-  var c=supportCfg();if(!c.wa&&!c.mail)return '';
+  var c=supportCfg();if(!c.form&&!c.wa&&!c.mail)return '';
   var msg='Ciao! Ti scrivo da Monitor ('+APP_VERSION+').\n\n[Scrivi qui cosa non va o la tua idea]\n\n— '+deviceInfo();
+  var btns=[];
+  if(c.form)btns.push(['<a class="btn BTN" href="'+esc(c.form)+'" target="_blank" rel="noopener">Segnala un problema o un’idea</a>']);
+  if(c.wa)btns.push(['<a class="btn BTN" href="https://wa.me/'+waNumber(c.wa)+'?text='+encodeURIComponent(msg)+'" target="_blank" rel="noopener">Scrivici su WhatsApp</a>']);
+  if(c.mail)btns.push(['<a class="btn BTN" href="mailto:'+esc(c.mail)+'?subject='+encodeURIComponent('Monitor – segnalazione')+'&body='+encodeURIComponent(msg)+'">Scrivici una mail</a>']);
   var h='<div class="section-head"><h2>Scrivici</h2></div><div class="card" style="margin-top:10px"><p style="margin:0 0 12px;color:var(--muted)">Qualcosa non va, o hai un’idea? Scrivici: ci metti 10 secondi e ci aiuti molto.</p><div style="display:flex;flex-direction:column;gap:10px">';
-  if(c.wa)h+='<a class="btn primary big" href="https://wa.me/'+waNumber(c.wa)+'?text='+encodeURIComponent(msg)+'" target="_blank" rel="noopener">Scrivici su WhatsApp</a>';
-  if(c.mail)h+='<a class="btn'+(c.wa?'':' primary big')+'" href="mailto:'+esc(c.mail)+'?subject='+encodeURIComponent('Monitor – segnalazione')+'&body='+encodeURIComponent(msg)+'">Scrivici una mail</a>';
+  btns.forEach(function(x,i){h+=x[0].replace('BTN',i===0?'primary big':'');});
   return h+'</div></div>';
 }
 /* ---- copia di sicurezza con un tocco ---- */
