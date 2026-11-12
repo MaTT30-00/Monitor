@@ -260,6 +260,41 @@ body::before{background:var(--bg-top)}
 .check input[type=checkbox]:checked{border-color:var(--brand);background:var(--brand)}
 .check input[type=checkbox]:checked::after{content:"";position:absolute;left:7px;top:2px;width:7px;height:13px;border:solid #FFFFFF;border-width:0 3px 3px 0;transform:rotate(45deg)}
 .opt input[type=radio]:focus-visible,.check input[type=checkbox]:focus-visible{outline:3px solid var(--link);outline-offset:2px}
+
+.oschoice{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:0 6px}
+.osbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:130px;border-radius:24px;border:2.5px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-weight:800;font-size:20px;cursor:pointer;box-shadow:0 6px 18px var(--shadow)}
+.osbtn.on{border-color:var(--brand);background:var(--brand-soft);color:var(--link)}
+.osbtn .osico{color:var(--link)}
+.phwrap{display:flex;justify-content:center;margin:14px 0 10px}
+.phone{position:relative;width:240px;height:300px;border-radius:30px;border:4px solid #3E3A45;background:#fff;overflow:hidden;box-shadow:0 8px 22px var(--shadow);text-align:left}
+.ph-body{position:absolute;inset:0;background:linear-gradient(180deg,#E6F3FB,#fff)}
+.ph-bar{position:absolute;left:0;right:0;height:44px;background:#F2F2F6;display:flex;align-items:center;justify-content:space-between;padding:0 12px;z-index:3}
+.phone.ios .ph-bar{bottom:0;border-top:1px solid #D8D8E0}
+.ph-bar.top{top:0;border-bottom:1px solid #D8D8E0}
+.ph-url{font-size:13px;color:#6A6573;background:#fff;border-radius:10px;padding:4px 12px;flex:1;margin-right:10px;text-align:center}
+.phone.ios .ph-url{margin-right:0;flex:none;min-width:110px;margin:0 auto}
+.phone.ios .ph-bar{justify-content:center}
+.phone.ios .ph-spot{position:absolute;right:14px;top:50%;transform:translateY(-50%)}
+.ph-spot{position:relative;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.ph-spot.pulse{animation:pulse 1.2s infinite;background:#FFE3D6}
+.onb-arrow{position:absolute;left:50%;transform:translateX(-50%);bottom:40px;animation:bob 1s infinite ease-in-out}
+.onb-arrow.down{bottom:auto;top:40px;transform:translateX(-50%) rotate(180deg)}
+.phone.android .onb-arrow{left:auto;right:-4px;transform:rotate(180deg)}
+.phone.ios .onb-arrow{left:auto;right:-6px}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(184,92,62,.5)}70%{box-shadow:0 0 0 14px rgba(184,92,62,0)}100%{box-shadow:0 0 0 0 rgba(184,92,62,0)}}
+@keyframes bob{0%,100%{margin-bottom:0}50%{margin-bottom:8px}}
+.ph-menu{position:absolute;right:10px;width:200px;background:#fff;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.22);border:1px solid #E1E1E8;z-index:4;overflow:hidden}
+.phone.ios .ph-menu{bottom:52px}
+.ph-menu.droptop{top:48px}
+.ph-item{padding:11px 12px;font-size:13.5px;color:#3E3A45;border-top:1px solid #EEE;display:flex;justify-content:space-between;align-items:center}
+.ph-item:first-child{border-top:none}
+.ph-item.hi{background:#FFF0BE;font-weight:800;outline:3px solid #B85C3E;outline-offset:-3px;border-radius:10px;animation:glow 1.3s infinite}
+@keyframes glow{50%{background:#FFE08A}}
+.ph-plus{font-size:18px;color:#B85C3E}
+.stepline{display:flex;gap:12px;align-items:flex-start;text-align:left;margin:10px 6px 0;font-size:16.5px;line-height:1.35}
+.stn{flex:none;width:30px;height:30px;border-radius:50%;background:var(--brand);color:var(--brand-ink);font-weight:800;display:flex;align-items:center;justify-content:center}
+@media (prefers-reduced-motion: reduce){.ph-spot.pulse,.onb-arrow,.ph-item.hi{animation:none}}
+.btn[disabled]{opacity:.45;cursor:default}
 </style>
 </head>
 <body>
@@ -844,7 +879,7 @@ document.addEventListener('visibilitychange',function(){
   else if(lockOn())render();
 });
 var deferredInstall=null;
-window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredInstall=e;if(ui.tab==='profilo')render();});
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredInstall=e;if(ui.tab==='profilo'||ui.tab==='onb')render();});
 window.addEventListener('appinstalled',function(){deferredInstall=null;render();});
 function isStandalone(){return (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true;}
 function isIOS(){var ua=navigator.userAgent||'';return /iphone|ipad|ipod/i.test(ua)||(/macintosh/i.test(ua)&&navigator.maxTouchPoints>1);}
@@ -968,32 +1003,57 @@ function storicoText(v){
 
 /* ---- primo avvio ---- */
 var ONB=[
-  {ill:'ass',t:'Benvenuto in Monitor',p:'Ti ricordo le scadenze di auto, moto e assicurazioni, così non ti dimentichi più niente. Ti mostro in un minuto come si usa.'},
-  {vis:'home',t:'Scegli cosa gestire',p:'Dalla home tocchi il riquadro che ti serve: auto, moto, bici o assicurazioni.'},
-  {vis:'sezioni',t:'Ogni veicolo ha la sua scheda',p:'Dentro trovi tagliandi, bolli, assicurazione, revisioni e gomme, con lo storico e il prezzo di ogni cosa.'},
-  {vis:'colori',t:'I colori ti dicono cosa fare',p:'Il quadrato mostra quanto manca. Quando hai fatto la cosa, tocca “Fatto”: alla prossima scadenza ci penso io.'},
-  {vis:'resto',t:'Il resto è automatico',p:'Le spese si sommano da sole. Nel Profilo puoi mettere la tua officina per prenotare con un tocco e proteggere la patente con Face ID o impronta.'},
-  {ill:'auto',t:'Cominciamo!',p:'Aggiungi la tua auto: bastano marca e modello. Il resto lo aggiungi quando vuoi.'}
+  {ill:'ass',t:'Benvenuti in Monitor',p:'Le scadenze di auto, moto e bici, tutte in un posto.',main:'Avanti'},
+  {choose:true,t:'Che telefono hai?',p:'Così ti mostro come mettere l’app sulla schermata Home.'},
+  {howto:true},
+  {ill:'auto',t:'Cominciamo!',p:'Aggiungi la tua auto: bastano marca e modello.'}
 ];
-function onbVis(k){
-  if(k==='home')return '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'+['auto','moto','bici','casa','ass'].map(function(n){return '<span class="illo sm" style="background:'+BG[n]+'">'+illo(n)+'</span>';}).join('')+'</div>';
-  if(k==='sezioni'){
-    var L={tagliandi:'Tagliandi',bolli:'Bolli',assicurazione:'Assicurazione',revisioni:'Revisioni',gomme:'Gomme',altro:'Altre spese'};
-    return '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:320px;margin:0 auto">'+Object.keys(L).map(function(s){var c=SEC[s];return '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;font-weight:700"><span class="st-ico" style="background:'+c.bg+'">'+ic(c.icon,26)+'</span>'+esc(L[s])+'</div>';}).join('')+'</div>';
+function onbIsApp(){return isStandalone();}
+function onbSteps(){var o=[0,1];if(!onbIsApp())o.push(2);o.push(3);return o;}
+function phoneInstallArt(os,phase){
+  var ARROW='<svg class="onb-arrow" viewBox="0 0 40 40" width="46" height="46" aria-hidden="true"><path d="M20 4 L20 30 M8 20 L20 32 L32 20" fill="none" stroke="#B85C3E" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  if(os==='ios'){
+    var bar='<div class="ph-bar"><span class="ph-url">monitor</span><span class="ph-spot'+(phase===0?' pulse':'')+'" id="ph-share">'+(phase===0?ARROW:'')+'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2A55C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg></span></div>';
+    var menu=phase===0?'':'<div class="ph-menu"><div class="ph-item">Copia</div><div class="ph-item">Aggiungi ai preferiti</div><div class="ph-item hi">Aggiungi alla schermata Home<span class="ph-plus">＋</span></div><div class="ph-item">Cerca nella pagina</div></div>';
+    return '<div class="phone ios"><div class="ph-body">'+menu+'</div>'+bar+'</div>';
   }
-  if(k==='colori')return '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:340px;margin:0 auto">'+[['late','!','scaduta','Scaduta'],['warn','12','giorni','Scade presto'],['soon','2','mesi','In arrivo'],['ok','5','mesi','Tutto ok']].map(function(x){return '<div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div class="cd '+x[0]+'"><b>'+x[1]+'</b><span>'+x[2]+'</span></div><span style="font-size:12px;font-weight:700">'+x[3]+'</span></div>';}).join('')+'</div>';
-  if(k==='resto')return '<div style="display:flex;gap:18px;justify-content:center">'+[['chart','Spese'],['user','Officina'],['lock','Patente']].map(function(x){return '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;font-weight:700"><span class="st-ico" style="background:var(--brand-soft);color:var(--link)">'+ic(x[0],26)+'</span>'+x[1]+'</div>';}).join('')+'</div>';
-  return '';
+  var top='<div class="ph-bar top"><span class="ph-url">monitor</span><span class="ph-spot'+(phase===0?' pulse':'')+'" id="ph-dots">'+(phase===0?ARROW.replace('class="onb-arrow"','class="onb-arrow down"'):'')+'<svg viewBox="0 0 24 24" width="22" height="22" fill="#3E3A45" aria-hidden="true"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></span></div>';
+  var menu2=phase===0?'':'<div class="ph-menu droptop"><div class="ph-item">Nuova scheda</div><div class="ph-item">Cronologia</div><div class="ph-item hi">Installa app<span class="ph-plus">⤓</span></div><div class="ph-item">Condividi</div></div>';
+  return '<div class="phone android">'+top+'<div class="ph-body">'+menu2+'</div></div>';
 }
 function viewOnb(){
-  var i=ui.onb||0,s=ONB[i],last=i===ONB.length-1,rp=!!ui.onbReplay;
+  var steps=onbSteps(),pos=Math.max(0,Math.min(ui.onb||0,steps.length-1)),idx=steps[pos],s=ONB[idx];
+  var last=pos===steps.length-1,rp=!!ui.onbReplay;
   var shp=(S.profile&&S.profile.shop&&waNumber(S.profile.shop.phone))?S.profile.shop:null;
   var shopChip=shp?'<div style="margin-bottom:14px"><span class="chip ok">Collegata a '+esc(shp.name||'la tua officina')+'</span></div>':'';
-  var dots=ONB.map(function(x,k){return '<span style="width:'+(k===i?22:8)+'px;height:8px;border-radius:4px;background:'+(k===i?'var(--link)':'var(--line)')+'"></span>';}).join('');
-  var art=s.ill?'<div style="display:flex;justify-content:center"><span class="illo lg" style="background:'+BG[s.ill]+'">'+illo(s.ill)+'</span></div>':'<div style="min-height:164px;display:flex;align-items:center;justify-content:center">'+onbVis(s.vis)+'</div>';
-  var main=last?(rp?'<button class="btn primary block big" data-act="onb-skip">Ho capito</button>':'<button class="btn primary block big" data-act="onb-start">'+ic('plus')+'Aggiungi la mia auto</button>'):'<button class="btn primary block big" data-act="onb-next">Avanti</button>';
-  var foot='<div style="display:flex;justify-content:space-between;margin-top:8px">'+(i>0?'<button class="linkbtn" data-act="onb-prev">← Indietro</button>':'<span></span>')+(last?(rp?'<span></span>':'<button class="linkbtn" data-act="onb-skip">Lo faccio dopo</button>'):'<button class="linkbtn" data-act="onb-skip">'+(rp?'Chiudi':'Salta')+'</button>')+'</div>';
-  return '<div style="padding-top:20px;text-align:center">'+shopChip+art+'<h1 style="margin-top:24px">'+esc(s.t)+'</h1><p style="font-size:17px;color:var(--muted);margin:8px 8px 22px">'+esc(s.p)+'</p><div style="display:flex;gap:6px;justify-content:center;margin-bottom:22px">'+dots+'</div>'+main+foot+'</div>';
+  var dots=steps.map(function(x,k){return '<span style="width:'+(k===pos?22:8)+'px;height:8px;border-radius:4px;background:'+(k===pos?'var(--link)':'var(--line)')+'"></span>';}).join('');
+  var body='',main='',skipLbl=rp?'Chiudi':'Salta';
+  if(s.choose){
+    var os=ui.onbOS;
+    body='<h1 style="margin-top:6px">'+esc(s.t)+'</h1><p style="font-size:17px;color:var(--muted);margin:8px 8px 20px">'+esc(s.p)+'</p>'+
+      '<div class="oschoice"><button class="osbtn'+(os==='ios'?' on':'')+'" data-act="onb-os" data-os="ios"><span class="osico">'+ic('home',34)+'</span><span>iPhone</span></button><button class="osbtn'+(os==='android'?' on':'')+'" data-act="onb-os" data-os="android"><span class="osico">'+ic('home',34)+'</span><span>Android</span></button></div>';
+    main='<button class="btn primary block big" data-act="onb-next"'+(os?'':' disabled')+'>Avanti</button>';
+  }else if(s.howto){
+    var os2=ui.onbOS||(isIOS()?'ios':'android'),ph=ui.onbPhase||0,ios=os2==='ios';
+    var title=ios?'Mettila sulla schermata Home':'Installa l’app';
+    var st1=ios?'Apri questa pagina con <b>Safari</b> e tocca <b>Condividi</b> (il quadrato con la freccia).':'Apri questa pagina con <b>Chrome</b> e tocca i <b>tre puntini</b> in alto a destra.';
+    var st2=ios?'Poi scegli <b>“Aggiungi alla schermata Home”</b> e conferma con Aggiungi.':'Poi scegli <b>“Installa app”</b> e conferma.';
+    body='<h1 style="margin-top:6px">'+title+'</h1><div class="phwrap">'+phoneInstallArt(os2,ph)+'</div>'+
+      '<div class="stepline"><span class="stn">'+(ph===0?'1':'2')+'</span><span>'+(ph===0?st1:st2)+'</span></div>';
+    if(ph===0)main='<button class="btn primary block big" data-act="onb-phase" data-ph="1">Fatto, ora?</button>';
+    else{
+      main='<button class="btn primary block big" data-act="onb-next">Ho installato</button>';
+      if(!ios&&deferredInstall)main='<button class="btn primary block big" data-act="install">Installa adesso</button><button class="btn block" style="margin-top:10px" data-act="onb-next">Più tardi</button>';
+    }
+    skipLbl=rp?'Chiudi':'Lo faccio dopo';
+  }else{
+    var art='<div style="display:flex;justify-content:center"><span class="illo lg" style="background:'+BG[s.ill]+'">'+illo(s.ill)+'</span></div>';
+    body=art+'<h1 style="margin-top:24px">'+esc(s.t)+'</h1><p style="font-size:17px;color:var(--muted);margin:8px 8px 22px">'+esc(s.p)+'</p>';
+    if(last)main=rp?'<button class="btn primary block big" data-act="onb-skip">Ho capito</button>':'<button class="btn primary block big" data-act="onb-start">'+ic('plus')+'Aggiungi la mia auto</button>';
+    else main='<button class="btn primary block big" data-act="onb-next">Avanti</button>';
+  }
+  var foot='<div style="display:flex;justify-content:space-between;margin-top:8px">'+(pos>0?'<button class="linkbtn" data-act="onb-prev">← Indietro</button>':'<span></span>')+(last&&!rp?'<button class="linkbtn" data-act="onb-skip">Lo faccio dopo</button>':(last?'<span></span>':'<button class="linkbtn" data-act="onb-skip">'+skipLbl+'</button>'))+'</div>';
+  return '<div style="padding-top:20px;text-align:center">'+shopChip+body+'<div style="display:flex;gap:6px;justify-content:center;margin:20px 0 20px">'+dots+'</div>'+main+foot+'</div>';
 }
 
 /* ---- avviso con "Annulla" ---- */
@@ -1182,7 +1242,7 @@ function monthChart(items){
   var cols=keys.map(function(k){var v=sums[k]||0;return '<div class="mcol" title="'+esc(MNF[parseInt(k.slice(5),10)-1]+': '+eur(v))+'"><div class="mbarwrap"><div class="mbar" style="height:'+(v?Math.max(4,Math.round(v/max*100)):0)+'%"></div></div><div class="mlab">'+MN[parseInt(k.slice(5),10)-1]+'</div></div>';}).join('');
   return '<div class="section-head"><h2>Mese per mese</h2></div><div class="card" style="margin-top:10px"><div class="mchart">'+cols+'</div>'+((sums[best]||0)>0?'<div style="font-size:14px;color:var(--muted);margin-top:10px">Il mese più caro è stato '+MNF[parseInt(best.slice(5),10)-1]+': <b style="color:var(--ink)">'+esc(eur(sums[best]))+'</b></div>':'')+'</div>';
 }
-function finishOnb(){S.profile=S.profile||{name:'',photo:''};S.profile.onboarded=true;save();ui.tab=ui.onbReplay?'profilo':'home';ui.onbReplay=false;ui.onb=0;}
+function finishOnb(){S.profile=S.profile||{name:'',photo:''};S.profile.onboarded=true;save();ui.tab=ui.onbReplay?'profilo':'home';ui.onbReplay=false;ui.onb=0;ui.onbPhase=0;}
 function render(){
   try{if(ui.tab!=='onb')localStorage.setItem('monitor.loc',JSON.stringify({tab:ui.tab,vf:ui.vf,vid:ui.vid,sec:ui.sec,fromSpese:!!ui.fromSpese,ts:Date.now()}));}catch(e){}
   if(S.profile&&!S.profile.since){S.profile.since=iso(today());save();}
@@ -1600,9 +1660,11 @@ document.addEventListener('click',function(e){
     case 'print':try{window.print();}catch(x){showToast('Non riesco ad aprire la stampa da qui. Usa “Copia come testo”.');}break;
     case 'copy-storico':var sv=vOf(ui.vid);if(sv){try{navigator.clipboard.writeText(storicoText(sv)).then(function(){showToast('Copiato');},function(){showToast('Non riesco a copiare da qui.');});}catch(x){showToast('Non riesco a copiare da qui.');}}break;
     case 'undo':if(undoSnap){S=JSON.parse(undoSnap);undoSnap=null;save();$('#toast').hidden=true;render();}break;
-    case 'onb-prev':ui.onb=Math.max(0,(ui.onb||0)-1);render();break;
-    case 'onb-replay':ui.onbReplay=true;ui.onb=0;ui.tab='onb';render();window.scrollTo(0,0);break;
-    case 'onb-next':ui.onb=(ui.onb||0)+1;render();break;
+    case 'onb-prev':ui.onb=Math.max(0,(ui.onb||0)-1);ui.onbPhase=0;render();break;
+    case 'onb-replay':ui.onbReplay=true;ui.onb=0;ui.onbPhase=0;ui.tab='onb';render();window.scrollTo(0,0);break;
+    case 'onb-next':ui.onb=(ui.onb||0)+1;ui.onbPhase=0;render();window.scrollTo(0,0);break;
+    case 'onb-os':ui.onbOS=el.getAttribute('data-os');render();break;
+    case 'onb-phase':ui.onbPhase=+el.getAttribute('data-ph');render();break;
     case 'onb-skip':finishOnb();render();break;
     case 'onb-start':finishOnb();ui.tab='garage';ui.vf='auto';render();sheetVehicle();break;
     case 'export':sheetExport();break;
