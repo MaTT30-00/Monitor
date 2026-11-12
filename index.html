@@ -1008,8 +1008,24 @@ var ONB=[
   {howto:true},
   {ill:'auto',t:'Cominciamo!',p:'Aggiungi la tua auto: bastano marca e modello.'}
 ];
-function onbIsApp(){return isStandalone();}
-function onbSteps(){var o=[0,1];if(!onbIsApp())o.push(2);o.push(3);return o;}
+function onbBrowser(){
+  var ua=navigator.userAgent||'',ios=/iphone|ipad|ipod/i.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),and=/android/i.test(ua);
+  var inapp=/FBAN|FBAV|Instagram|Line\/|MicroMessenger|Snapchat|TikTok|Telegram|GSA\/|; wv\)/i.test(ua);
+  if(ios){if(inapp||!/Safari\//.test(ua))return 'ios-inapp';if(/CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo|Brave/i.test(ua))return 'ios-other';return 'ios-safari';}
+  if(and){if(inapp)return 'and-inapp';if(/SamsungBrowser/i.test(ua))return 'and-samsung';if(/Firefox/i.test(ua))return 'and-firefox';if(/EdgA/i.test(ua))return 'and-edge';if(/OPR|OPT\/|Vivaldi|DuckDuckGo|YaBrowser|UCBrowser|Brave/i.test(ua))return 'and-other';return 'and-chrome';}
+  return 'desktop';
+}
+function onbKind(os,det){
+  if(os==='ios')return (det==='ios-other'||det==='ios-inapp')?det:'ios-safari';
+  return (det==='and-samsung'||det==='and-firefox'||det==='and-edge'||det==='and-other'||det==='and-inapp')?det:'and-chrome';
+}
+function copyLink(){
+  var u=location.href.split('#')[0].split('?')[0]+'?guida=installa';
+  try{var q=new URLSearchParams(location.search),o=q.get('officina')||q.get('o')||'',t=q.get('tel')||q.get('t')||'';if(t)u+='&officina='+encodeURIComponent(o)+'&tel='+encodeURIComponent(t);}catch(e){}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u).then(function(){showToast('Link copiato');},function(){window.prompt('Copia il link:',u);});
+  else window.prompt('Copia il link:',u);
+}
+function onbSteps(rp){var app=isStandalone();if(app&&!rp)return [3];if(ui.onbDirect&&!rp)return [2,3];var o=[0,1];if(!app)o.push(2);o.push(3);return o;}
 function phoneInstallArt(os,phase){
   var ARROW='<svg class="onb-arrow" viewBox="0 0 40 40" width="46" height="46" aria-hidden="true"><path d="M20 4 L20 30 M8 20 L20 32 L32 20" fill="none" stroke="#B85C3E" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   if(os==='ios'){
@@ -1021,39 +1037,73 @@ function phoneInstallArt(os,phase){
   var menu2=phase===0?'':'<div class="ph-menu droptop"><div class="ph-item">Nuova scheda</div><div class="ph-item">Cronologia</div><div class="ph-item hi">Installa app<span class="ph-plus">⤓</span></div><div class="ph-item">Condividi</div></div>';
   return '<div class="phone android">'+top+'<div class="ph-body">'+menu2+'</div></div>';
 }
+function onbHowto(os,det,ph){
+  var ios=os==='ios',kind=onbKind(os,det),other=!!ui.onbOther;
+  var needSwitch=(kind==='ios-other'||kind==='ios-inapp'||kind==='and-inapp'||kind==='and-other')&&!ui.onbSwitched&&!other;
+  var textKind=(kind==='and-samsung'||kind==='and-firefox'||kind==='and-edge');
+  var step=function(n,t){return '<div class="stepline"><span class="stn">'+n+'</span><span>'+t+'</span></div>';};
+  var copyBtn='<button class="btn block" style="margin-top:12px" data-act="copy-link">Copia il link</button>';
+  var installNow=(!ios&&deferredInstall)?'<button class="btn primary block big" data-act="install">Installa adesso</button>':'';
+  var body='',main='';
+  if(other){
+    body='<h1 style="margin-top:6px">Altro browser</h1><p style="font-size:16.5px;color:var(--muted);margin:8px 8px 6px">Ogni browser ha il suo menu, ma la voce è quasi sempre la stessa.</p>'+
+      step(1,'Apri il <b>menu</b> del browser (tre puntini o tre righe).')+
+      step(2,'Cerca <b>“Installa app”</b> oppure <b>“Aggiungi alla schermata Home”</b>.')+
+      '<p style="font-size:15px;color:var(--muted);margin:14px 8px 0">Non la trovi? Copia il link e aprilo con '+(ios?'<b>Safari</b>':'<b>Chrome</b>')+'.</p>'+copyBtn;
+    main=installNow||'<button class="btn primary block big" data-act="onb-next">Ho installato</button>';
+    if(installNow)main+='<button class="btn block" style="margin-top:10px" data-act="onb-next">Più tardi</button>';
+    main+='<button class="linkbtn" style="margin-top:8px" data-act="onb-other">← Torna alle istruzioni con le immagini</button>';
+  }else if(needSwitch){
+    var who=ios?'Safari':'Chrome';
+    var why=(kind==='ios-inapp'||kind==='and-inapp')?'Sei dentro un’altra app (per esempio WhatsApp o Instagram). Tocca il menu <b>⋯</b> e scegli <b>“Apri nel browser”</b>, oppure copia il link.':(ios?'Su iPhone l’app si installa da <b>Safari</b>. Copia il link, apri Safari e incollalo nella barra.':'Per installarla è meglio <b>Chrome</b>. Copia il link e aprilo con Chrome.');
+    body='<h1 style="margin-top:6px">Aprila con '+who+'</h1><p style="font-size:16.5px;color:var(--muted);margin:8px 8px 6px">'+why+'</p>'+copyBtn;
+    main='<button class="btn primary block big" data-act="onb-switched">Ho aperto '+who+'</button><button class="linkbtn" style="margin-top:8px" data-act="onb-other">Uso un altro browser</button>';
+  }else if(textKind){
+    var m1=kind==='and-samsung'?'Tocca le <b>tre righe</b> in basso a destra.':(kind==='and-edge'?'Tocca i <b>tre puntini</b> in basso.':'Tocca i <b>tre puntini</b> in alto a destra.');
+    var m2=kind==='and-samsung'?'Poi scegli <b>“Aggiungi pagina a”</b> e <b>“Schermata Home”</b>.':(kind==='and-edge'?'Poi scegli <b>“Aggiungi al telefono”</b>.':'Poi scegli <b>“Installa”</b>.');
+    body='<h1 style="margin-top:6px">Installa l’app</h1>'+step(1,m1)+step(2,m2)+'<p style="font-size:15px;color:var(--muted);margin:14px 8px 0">Non trovi la voce? Copia il link e aprilo con <b>Chrome</b>.</p>'+copyBtn;
+    main=installNow||'<button class="btn primary block big" data-act="onb-next">Ho installato</button>';
+    if(installNow)main+='<button class="btn block" style="margin-top:10px" data-act="onb-next">Più tardi</button>';
+    main+='<button class="linkbtn" style="margin-top:8px" data-act="onb-other">Uso un altro browser</button>';
+  }else{
+    var title=ios?'Mettila sulla schermata Home':'Installa l’app';
+    var st1=ios?'Apri questa pagina con <b>Safari</b> e tocca <b>Condividi</b> (il quadrato con la freccia).':'Apri questa pagina con <b>Chrome</b> e tocca i <b>tre puntini</b> in alto a destra.';
+    var st2=ios?'Poi scegli <b>“Aggiungi alla schermata Home”</b> e conferma con Aggiungi.':'Poi scegli <b>“Installa app”</b> e conferma.';
+    body='<h1 style="margin-top:6px">'+title+'</h1><div class="phwrap">'+phoneInstallArt(os,ph)+'</div>'+step(ph===0?'1':'2',ph===0?st1:st2);
+    if(ph===0)main='<button class="btn primary block big" data-act="onb-phase" data-ph="1">Fatto, ora?</button>';
+    else main=installNow?(installNow+'<button class="btn block" style="margin-top:10px" data-act="onb-next">Più tardi</button>'):'<button class="btn primary block big" data-act="onb-next">Ho installato</button>';
+    main+='<button class="linkbtn" style="margin-top:8px" data-act="onb-other">Uso un altro browser</button>';
+  }
+  return {body:body,main:main};
+}
 function viewOnb(){
-  var steps=onbSteps(),pos=Math.max(0,Math.min(ui.onb||0,steps.length-1)),idx=steps[pos],s=ONB[idx];
-  var last=pos===steps.length-1,rp=!!ui.onbReplay;
+  var rp=!!ui.onbReplay,steps=onbSteps(rp),pos=Math.max(0,Math.min(ui.onb||0,steps.length-1)),idx=steps[pos],s=ONB[idx];
+  var app=isStandalone(),det=onbBrowser(),detOS=det.indexOf('ios')===0?'ios':(det.indexOf('and')===0?'android':null),os=ui.onbOS||detOS;
+  var last=pos===steps.length-1;
   var shp=(S.profile&&S.profile.shop&&waNumber(S.profile.shop.phone))?S.profile.shop:null;
   var shopChip=shp?'<div style="margin-bottom:14px"><span class="chip ok">Collegata a '+esc(shp.name||'la tua officina')+'</span></div>':'';
-  var dots=steps.map(function(x,k){return '<span style="width:'+(k===pos?22:8)+'px;height:8px;border-radius:4px;background:'+(k===pos?'var(--link)':'var(--line)')+'"></span>';}).join('');
-  var body='',main='',skipLbl=rp?'Chiudi':'Salta';
+  var dots=steps.length>1?'<div style="display:flex;gap:6px;justify-content:center;margin:20px 0 20px">'+steps.map(function(x,k){return '<span style="width:'+(k===pos?22:8)+'px;height:8px;border-radius:4px;background:'+(k===pos?'var(--link)':'var(--line)')+'"></span>';}).join('')+'</div>':'<div style="height:22px"></div>';
+  var body='',main='',skipLbl=rp?'Chiudi':'Salta',extra='';
   if(s.choose){
-    var os=ui.onbOS;
     body='<h1 style="margin-top:6px">'+esc(s.t)+'</h1><p style="font-size:17px;color:var(--muted);margin:8px 8px 20px">'+esc(s.p)+'</p>'+
       '<div class="oschoice"><button class="osbtn'+(os==='ios'?' on':'')+'" data-act="onb-os" data-os="ios"><span class="osico">'+ic('home',34)+'</span><span>iPhone</span></button><button class="osbtn'+(os==='android'?' on':'')+'" data-act="onb-os" data-os="android"><span class="osico">'+ic('home',34)+'</span><span>Android</span></button></div>';
     main='<button class="btn primary block big" data-act="onb-next"'+(os?'':' disabled')+'>Avanti</button>';
   }else if(s.howto){
-    var os2=ui.onbOS||(isIOS()?'ios':'android'),ph=ui.onbPhase||0,ios=os2==='ios';
-    var title=ios?'Mettila sulla schermata Home':'Installa l’app';
-    var st1=ios?'Apri questa pagina con <b>Safari</b> e tocca <b>Condividi</b> (il quadrato con la freccia).':'Apri questa pagina con <b>Chrome</b> e tocca i <b>tre puntini</b> in alto a destra.';
-    var st2=ios?'Poi scegli <b>“Aggiungi alla schermata Home”</b> e conferma con Aggiungi.':'Poi scegli <b>“Installa app”</b> e conferma.';
-    body='<h1 style="margin-top:6px">'+title+'</h1><div class="phwrap">'+phoneInstallArt(os2,ph)+'</div>'+
-      '<div class="stepline"><span class="stn">'+(ph===0?'1':'2')+'</span><span>'+(ph===0?st1:st2)+'</span></div>';
-    if(ph===0)main='<button class="btn primary block big" data-act="onb-phase" data-ph="1">Fatto, ora?</button>';
-    else{
-      main='<button class="btn primary block big" data-act="onb-next">Ho installato</button>';
-      if(!ios&&deferredInstall)main='<button class="btn primary block big" data-act="install">Installa adesso</button><button class="btn block" style="margin-top:10px" data-act="onb-next">Più tardi</button>';
-    }
-    skipLbl=rp?'Chiudi':'Lo faccio dopo';
+    var h=onbHowto(os||'android',det,ui.onbPhase||0);body=h.body;main=h.main;skipLbl=rp?'Chiudi':'Lo faccio dopo';
   }else{
-    var art='<div style="display:flex;justify-content:center"><span class="illo lg" style="background:'+BG[s.ill]+'">'+illo(s.ill)+'</span></div>';
-    body=art+'<h1 style="margin-top:24px">'+esc(s.t)+'</h1><p style="font-size:17px;color:var(--muted);margin:8px 8px 22px">'+esc(s.p)+'</p>';
-    if(last)main=rp?'<button class="btn primary block big" data-act="onb-skip">Ho capito</button>':'<button class="btn primary block big" data-act="onb-start">'+ic('plus')+'Aggiungi la mia auto</button>';
-    else main='<button class="btn primary block big" data-act="onb-next">Avanti</button>';
+    var t=s.t,pp=s.p;
+    main=last?(rp?'<button class="btn primary block big" data-act="onb-skip">Ho capito</button>':'<button class="btn primary block big" data-act="onb-start">'+ic('plus')+'Aggiungi la mia auto</button>'):'<button class="btn primary block big" data-act="onb-next">Avanti</button>';
+    if(idx===3&&app&&!rp){
+      t='Tutto pronto!';pp='L’app è installata. Aggiungi la tua auto: bastano marca e modello.';
+      extra='<label class="linkbtn" for="restore-in" style="display:block;margin-top:12px;cursor:pointer">Ho già una copia dei dati: ripristinala</label><input class="sr" type="file" id="restore-in" accept=".json,application/json,text/plain">';
+    }else if(idx===3&&!app&&os==='ios'&&!rp){
+      t='Apri Monitor dalla Home';pp='Chiudi questa pagina e tocca l’icona di Monitor sulla schermata Home. Da lì cominci: i tuoi dati restano nell’app.';
+      main='<button class="btn primary block big" data-act="onb-skip">Ho capito</button>';
+    }
+    body='<div style="display:flex;justify-content:center"><span class="illo lg" style="background:'+BG[s.ill]+'">'+illo(s.ill)+'</span></div><h1 style="margin-top:24px">'+esc(t)+'</h1><p style="font-size:17px;color:var(--muted);margin:8px 8px 22px">'+esc(pp)+'</p>';
   }
-  var foot='<div style="display:flex;justify-content:space-between;margin-top:8px">'+(pos>0?'<button class="linkbtn" data-act="onb-prev">← Indietro</button>':'<span></span>')+(last&&!rp?'<button class="linkbtn" data-act="onb-skip">Lo faccio dopo</button>':(last?'<span></span>':'<button class="linkbtn" data-act="onb-skip">'+skipLbl+'</button>'))+'</div>';
-  return '<div style="padding-top:20px;text-align:center">'+shopChip+body+'<div style="display:flex;gap:6px;justify-content:center;margin:20px 0 20px">'+dots+'</div>'+main+foot+'</div>';
+  var foot='<div style="display:flex;justify-content:space-between;margin-top:8px">'+(pos>0?'<button class="linkbtn" data-act="onb-prev">← Indietro</button>':'<span></span>')+(last&&!rp&&!(idx===3&&!app&&os==='ios')?'<button class="linkbtn" data-act="onb-skip">Lo faccio dopo</button>':(last?'<span></span>':'<button class="linkbtn" data-act="onb-skip">'+skipLbl+'</button>'))+'</div>';
+  return '<div style="padding-top:20px;text-align:center">'+shopChip+body+dots+main+extra+foot+'</div>';
 }
 
 /* ---- avviso con "Annulla" ---- */
@@ -1242,7 +1292,7 @@ function monthChart(items){
   var cols=keys.map(function(k){var v=sums[k]||0;return '<div class="mcol" title="'+esc(MNF[parseInt(k.slice(5),10)-1]+': '+eur(v))+'"><div class="mbarwrap"><div class="mbar" style="height:'+(v?Math.max(4,Math.round(v/max*100)):0)+'%"></div></div><div class="mlab">'+MN[parseInt(k.slice(5),10)-1]+'</div></div>';}).join('');
   return '<div class="section-head"><h2>Mese per mese</h2></div><div class="card" style="margin-top:10px"><div class="mchart">'+cols+'</div>'+((sums[best]||0)>0?'<div style="font-size:14px;color:var(--muted);margin-top:10px">Il mese più caro è stato '+MNF[parseInt(best.slice(5),10)-1]+': <b style="color:var(--ink)">'+esc(eur(sums[best]))+'</b></div>':'')+'</div>';
 }
-function finishOnb(){S.profile=S.profile||{name:'',photo:''};S.profile.onboarded=true;save();ui.tab=ui.onbReplay?'profilo':'home';ui.onbReplay=false;ui.onb=0;ui.onbPhase=0;}
+function finishOnb(){S.profile=S.profile||{name:'',photo:''};S.profile.onboarded=true;save();ui.tab=ui.onbReplay?'profilo':'home';ui.onbReplay=false;ui.onb=0;ui.onbPhase=0;ui.onbDirect=false;ui.onbOther=false;ui.onbSwitched=false;}
 function render(){
   try{if(ui.tab!=='onb')localStorage.setItem('monitor.loc',JSON.stringify({tab:ui.tab,vf:ui.vf,vid:ui.vid,sec:ui.sec,fromSpese:!!ui.fromSpese,ts:Date.now()}));}catch(e){}
   if(S.profile&&!S.profile.since){S.profile.since=iso(today());save();}
@@ -1521,7 +1571,7 @@ function sheetShopOffer(){
 }
 function applyImport(o){
   S={vehicles:o.vehicles.map(function(v){var c=vOf(v.id);return c&&c.photo?Object.assign({},v,{photo:c.photo}):v;}),deadlines:o.deadlines,log:o.log,policies:Array.isArray(o.policies)?o.policies:[],profile:Object.assign({},(o.profile&&typeof o.profile==='object')?o.profile:{name:'',photo:''},{licenza:Object.assign({},(S.profile||{}).licenza||{},((o.profile||{}).licenza||{})),lock:(S.profile||{}).lock}),docs:(S.docs||[]).filter(function(x){return o.vehicles.some(function(v){return v.id===x.vehicleId;});})};
-  S.profile.lastBackup=iso(today());save();closeSheet();ui.tab='profilo';render();showToast('Dati ripristinati');
+  S.profile.lastBackup=iso(today());S.profile.onboarded=true;var fromOnb=(ui.tab==='onb');save();closeSheet();ui.tab=fromOnb?'home':'profilo';ui.onbDirect=false;render();showToast('Dati ripristinati');
 }
 function doImport(){
   try{
@@ -1660,9 +1710,12 @@ document.addEventListener('click',function(e){
     case 'print':try{window.print();}catch(x){showToast('Non riesco ad aprire la stampa da qui. Usa “Copia come testo”.');}break;
     case 'copy-storico':var sv=vOf(ui.vid);if(sv){try{navigator.clipboard.writeText(storicoText(sv)).then(function(){showToast('Copiato');},function(){showToast('Non riesco a copiare da qui.');});}catch(x){showToast('Non riesco a copiare da qui.');}}break;
     case 'undo':if(undoSnap){S=JSON.parse(undoSnap);undoSnap=null;save();$('#toast').hidden=true;render();}break;
-    case 'onb-prev':ui.onb=Math.max(0,(ui.onb||0)-1);ui.onbPhase=0;render();break;
-    case 'onb-replay':ui.onbReplay=true;ui.onb=0;ui.onbPhase=0;ui.tab='onb';render();window.scrollTo(0,0);break;
-    case 'onb-next':ui.onb=(ui.onb||0)+1;ui.onbPhase=0;render();window.scrollTo(0,0);break;
+    case 'onb-prev':ui.onb=Math.max(0,(ui.onb||0)-1);ui.onbPhase=0;ui.onbOther=false;ui.onbSwitched=false;render();break;
+    case 'onb-replay':ui.onbReplay=true;ui.onb=0;ui.onbPhase=0;ui.onbOther=false;ui.onbSwitched=false;ui.tab='onb';render();window.scrollTo(0,0);break;
+    case 'onb-next':ui.onb=(ui.onb||0)+1;ui.onbPhase=0;ui.onbOther=false;ui.onbSwitched=false;render();window.scrollTo(0,0);break;
+    case 'copy-link':copyLink();break;
+    case 'onb-switched':ui.onbSwitched=true;render();break;
+    case 'onb-other':ui.onbOther=!ui.onbOther;render();break;
     case 'onb-os':ui.onbOS=el.getAttribute('data-os');render();break;
     case 'onb-phase':ui.onbPhase=+el.getAttribute('data-ph');render();break;
     case 'onb-skip':finishOnb();render();break;
@@ -1715,7 +1768,9 @@ document.addEventListener('change',function(e){
   });
 })();
 try{var LC=JSON.parse(localStorage.getItem('monitor.loc')||'null');if(LC&&S.vehicles.length&&(Date.now()-LC.ts)<30*60*1000&&['home','garage','veicolo','sezione','storico','casa','ass','spese','profilo'].indexOf(LC.tab)>=0){ui.tab=LC.tab;ui.vf=LC.vf||null;ui.vid=LC.vid;ui.sec=LC.sec;ui.fromSpese=!!LC.fromSpese;}}catch(e){}
+try{var gq=new URLSearchParams(location.search);if(gq.get('guida')==='installa'&&!isStandalone()){ui.onbDirect=true;gq.delete('guida');var gs=gq.toString();history.replaceState(null,'',location.pathname+(gs?'?'+gs:'')+location.hash);}}catch(e){}
 applyShopLink();
+if(ui.onbDirect&&!S.vehicles.length){ui.tab='onb';ui.onb=0;}
 if(!S.vehicles.length&&!(S.profile&&S.profile.onboarded)){ui.tab='onb';ui.onb=0;}
 render();
 if(ui.shopWelcome){showToast('Officina collegata: '+ui.shopWelcome);ui.shopWelcome=null;}
